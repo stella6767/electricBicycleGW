@@ -1,0 +1,14 @@
+
+server:
+  port: 8080
+  servlet:
+    context-path: /
+    encoding:
+      charset: utf-8
+      enabled: true
+
+
+
+
+
+ip: localhost
