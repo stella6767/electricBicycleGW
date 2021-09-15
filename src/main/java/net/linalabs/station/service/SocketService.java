@@ -18,6 +18,7 @@ import java.net.ServerSocket;
 import java.nio.ByteBuffer;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.nio.charset.Charset;
 
 @Slf4j
 @EnableAsync
@@ -35,7 +36,7 @@ public class SocketService {
             ServerSocketChannel serverSocketChannel = null; // ServerSocketChannel은 하나
 
             serverSocketChannel = ServerSocketChannel.open();
-            serverSocketChannel.bind(new InetSocketAddress(5051)); // socket().
+            serverSocketChannel.bind(new InetSocketAddress(globalVar.socketPort)); // socket().
 
             boolean bLoop = true;
 
@@ -83,43 +84,31 @@ public class SocketService {
 
 
 
-//    @Async
-//    public void socketClient() throws IOException {
-//
-//        SocketChannel schn = null;
-//
-//        schn = SocketChannel.open();
-//        try {
-//            schn.connect(new InetSocketAddress(globalVar.ip, 5051));
-//            schn.configureBlocking(true);// Non-Blocking I/O
-//            log.info("socketChannel connected to port 5051");
-//            globalVar.globalSocket.put("schnClient", schn);
-//
-//        } catch (Exception e2) {
-//            log.debug("connected refused!!!");
-//        }
-//
-//    }
-
-
-
-    public void sendToCharger(String jsonData) throws IOException {
+    @Async
+    public String sendToChargerAndRespRead(String jsonData) throws IOException { //일단 읽는 거 신경안쓰고,
 
         SocketChannel schn = globalVar.globalSocket.get("schn");
         ByteBuffer writeBuf = ByteBuffer.allocate(10240);
+        ByteBuffer readBuf = ByteBuffer.allocate(10240);
+
+        Charset charset = Charset.forName("UTF-8");
 
         if(schn.isConnected()) {
             log.info("Socket channel이 정상적으로 연결되었고 버퍼를 씁니다.");
-            writeBuf.flip();
             writeBuf = Common.str_to_bb(jsonData);
-
             schn.write(writeBuf);
-            writeBuf.clear();
+
+            schn.read(readBuf); // 클라이언트로부터 데이터 읽기
+            readBuf.flip();
+            //log.info("rental Received Data : " + charset.decode(readBuf).toString());
+
 
         }else if(!schn.isConnected()) {
             log.info("Socket channel이 연결이 끊어졌습니다.");
         }
+        //schn.close();
 
+        return charset.decode(readBuf).toString();
     }
 
 
