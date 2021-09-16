@@ -10,6 +10,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
+import java.nio.channels.SocketChannel;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -21,17 +24,15 @@ public class ElectricBicycleController {
     private ObjectMapper objectMapper = new ObjectMapper();
 
     @PostMapping("/rental")
-    public String rentalRequest(@RequestBody CMReqDto rentalReq) throws IOException {
+    public String rentalRequest(@RequestBody CMReqDto rentalReq) throws IOException, ExecutionException, InterruptedException {
 
         log.info("전기자전거 대여요청 옴: " + rentalReq);
         rentalReq.setOpcode("rental");
         String jsonRespData = objectMapper.writeValueAsString(rentalReq);
         log.info("파싱된 대여요청 데이터: " + jsonRespData);
-        String response = socketService.sendToChargerAndRespRead(jsonRespData);
+        CompletableFuture<String> completableFuture = socketService.sendToChargerAndRespRead(jsonRespData);
 
-        log.info("dmdmd: " + response );
-
-        return response;
+        return completableFuture.get();
 
     }
 
@@ -44,7 +45,7 @@ public class ElectricBicycleController {
         rentalReq.setOpcode("return");
         String jsonRespData = objectMapper.writeValueAsString(rentalReq);
         log.info("파싱된 대여요청 데이터: " + jsonRespData);
-        String response = socketService.sendToChargerAndRespRead(jsonRespData);
+        //String response = socketService.sendToChargerAndRespRead(jsonRespData);
 
 
     }

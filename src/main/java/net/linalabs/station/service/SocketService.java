@@ -19,9 +19,9 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.Charset;
+import java.util.concurrent.CompletableFuture;
 
 @Slf4j
-@EnableAsync
 @RequiredArgsConstructor
 @Service
 public class SocketService {
@@ -85,7 +85,7 @@ public class SocketService {
 
 
     @Async
-    public String sendToChargerAndRespRead(String jsonData) throws IOException { //일단 읽는 거 신경안쓰고,
+    public CompletableFuture<String> sendToChargerAndRespRead(String jsonData) throws IOException { //일단 읽는 거 신경안쓰고,
 
         SocketChannel schn = globalVar.globalSocket.get("schn");
         ByteBuffer writeBuf = ByteBuffer.allocate(10240);
@@ -108,7 +108,7 @@ public class SocketService {
         }
         //schn.close();
 
-        return charset.decode(readBuf).toString();
+        return  CompletableFuture.completedFuture(charset.decode(readBuf).toString());
     }
 
 
