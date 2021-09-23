@@ -11,12 +11,13 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
-public class CMReqDto {
+public class CMRespDto {
 
-    private String opcode; //대여인지, 반납인지 결정
-    private Integer docked;
-    private Integer stationid;
-    private Integer mobilityid;
-    private Integer chargerid;
+    private Integer resultCode;
+    private String resultMsg;
+    private Integer stationId;
+    private Integer chargerId;
+    private Integer mobilityId;
 
 }
+

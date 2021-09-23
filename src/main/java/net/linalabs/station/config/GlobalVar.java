@@ -15,6 +15,9 @@ public class GlobalVar {
     @Value("${socketPort}")
     public Integer socketPort;
 
+    @Value("${dockingUrl}")
+    public String dockingUrl;
+
     public ConcurrentHashMap<String, SocketChannel> globalSocket = new ConcurrentHashMap<>();
 
 }

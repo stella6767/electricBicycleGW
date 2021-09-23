@@ -24,15 +24,15 @@ public class ElectricBicycleController {
     private ObjectMapper objectMapper = new ObjectMapper();
 
     @PostMapping("/rental")
-    public String rentalRequest(@RequestBody CMReqDto rentalReq) throws IOException, ExecutionException, InterruptedException {
+    public void rentalRequest(@RequestBody CMReqDto rentalReq) throws IOException, ExecutionException, InterruptedException {
 
         log.info("전기자전거 대여요청 옴: " + rentalReq);
         rentalReq.setOpcode("rental");
         String jsonRespData = objectMapper.writeValueAsString(rentalReq);
         log.info("파싱된 대여요청 데이터: " + jsonRespData);
-        CompletableFuture<String> completableFuture = socketService.sendToChargerAndRespRead(jsonRespData);
+        socketService.sendToCharger(jsonRespData);
 
-        return completableFuture.get();
+        //return completableFuture.get();
 
     }
 

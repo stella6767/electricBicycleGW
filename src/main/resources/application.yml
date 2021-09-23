@@ -13,3 +13,5 @@ server:
 
 ip: localhost
 socketPort: 5053
+dockingUrl: https://pm.smartsuite.co.kr:4102/device/test/docking
+statusUpdateUrl: https://pm.smartsuite.co.kr:4102/device/test/statupdate
