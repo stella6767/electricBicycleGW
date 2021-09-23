@@ -5,7 +5,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.linalabs.station.config.GlobalVar;
 import net.linalabs.station.dto.CMReqDto;
+import net.linalabs.station.handler.MRentalException;
 import net.linalabs.station.service.SocketService;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -26,6 +28,15 @@ public class ElectricBicycleController {
 
     private ObjectMapper objectMapper = new ObjectMapper();
 
+    @GetMapping("/rental2")
+    public String aa(){
+        log.info("dddddddddd");
+
+        return "aaaaaaaasssss";
+    }
+
+
+
     @PostMapping("/rental")
     public String rentalRequest(@RequestBody CMReqDto rentalReq, HttpServletResponse response) throws IOException, ExecutionException, InterruptedException {
 
@@ -35,10 +46,10 @@ public class ElectricBicycleController {
         log.info("파싱된 대여요청 데이터: " + jsonRespData);
         socketService.sendToCharger(jsonRespData);
 
-        String aa = socketService.readSocketData();
-
-        //return null;
-        return aa;
+        //String aa = socketService.readSocketData();
+        //throw new MRentalException("aaaaa");
+        return null;
+        //return aa;
 
     }
 

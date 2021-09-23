@@ -9,12 +9,23 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @Slf4j
 @RequiredArgsConstructor
-@RestController //데이터를 리턴하기 위해서
-@ControllerAdvice //모든 익셉션을 낚아챔.
+@RestControllerAdvice(basePackages = {"net.linalabs.station"})
+//@RestController //데이터를 리턴하기 위해서
+//@ControllerAdvice //모든 익셉션을 낚아챔.
 public class GlobalExceptionHandler {
+
+
+    @ExceptionHandler(value= MRentalException.class)
+    public String 임시방편(MRentalException e) {
+
+        log.info("이렇게 해도 되나..: " + e.getMessage());
+
+        return e.getMessage();
+    }
 
 
     @ExceptionHandler(value= Exception.class)
