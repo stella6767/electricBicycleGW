@@ -40,6 +40,7 @@ public class SocketService {
     private RestTemplate rt = new RestTemplate();
     HttpHeaders headers = new HttpHeaders();
     ObjectMapper objectMapper = new ObjectMapper();
+    private StringBuffer sb = new StringBuffer();
 
 
 
@@ -69,6 +70,7 @@ public class SocketService {
                     log.info("socket connected 5051 port");
                     globalVar.globalSocket.put("schn", schn);
                     readSocketData();
+
                 } catch (Exception e) {
                     //logger.debug("AsynchronousCloseException 터짐");
                     //socketChannel.close();
@@ -105,56 +107,19 @@ public class SocketService {
 
         SocketChannel schn = globalVar.globalSocket.get("schn");
         ByteBuffer writeBuf = ByteBuffer.allocate(10240);
-//        ByteBuffer readBuf = ByteBuffer.allocate(10240);
-
-//        Charset charset = Charset.forName("UTF-8");
 
         if(schn.isConnected()) {
             log.info("Socket channel이 정상적으로 연결되었고 버퍼를 씁니다.");
             writeBuf = Common.str_to_bb(jsonData);
             schn.write(writeBuf);
 
-//            schn.read(readBuf); // 클라이언트로부터 데이터 읽기
-//            readBuf.flip();
-//            //log.info("rental Received Data : " + charset.decode(readBuf).toString());
-
 
         }else if(!schn.isConnected()) {
             log.info("Socket channel이 연결이 끊어졌습니다.");
         }
-        //schn.close();
 
-   //     return  CompletableFuture.completedFuture(charset.decode(readBuf).toString());
     }
 
-
-
-    //@Async
-//    public void readSocketData() throws IOException { //여기서 일괄적으로 RestTemplate으로 응답하는게 낫겠다.
-//
-//        log.info("docking 여부 리스닝 ");
-//        SocketChannel schn = globalVar.globalSocket.get("schn");
-//        ByteBuffer readBuf = ByteBuffer.allocate(10240);
-//
-//        Charset charset = Charset.forName("UTF-8");
-//
-//        String readSocketData = "";
-//
-//        if(schn.isConnected()) {
-//            log.info("Socket channel이 정상적으로 연결되었고 버퍼를 씁니다.");
-//
-//            schn.read(readBuf); // 클라이언트로부터 데이터 읽기
-//            readBuf.flip();
-//            //log.info("rental Received Data : " + charset.decode(readBuf).toString());
-//            readSocketData = charset.decode(readBuf).toString();
-//            dockingResp();
-//        }else if(!schn.isConnected()) {
-//            log.info("Socket channel이 연결이 끊어졌습니다.");
-//        }
-//        //schn.close();
-//
-//        //return
-//    }
 
 
 
@@ -175,7 +140,7 @@ public class SocketService {
                 // ByteBuffer readBuf = ByteBuffer.allocate(10); //버퍼 메모리 공간확보
                 ByteBuffer readBuf = ByteBuffer.allocate(10240);
 
-                log.debug("첫번째  while문");
+                log.info("첫번째  while문");
 
                 // 무한 루프
                 String result = ""; // 요기서 초기화
@@ -186,11 +151,11 @@ public class SocketService {
 
                         byteCount = schn.read(readBuf); // 소켓채널에서 한번에 초과되는 버퍼사이즈의 데이터가 들어오면..
 
-                        log.debug("[gwEmulThread #100] TID[" + "] byteCount :  " + byteCount);
+                        log.info("[gwEmulThread #100] TID[" + "] byteCount :  " + byteCount);
                         // logger.debug("isRunning why: " + isRunning);
                     } catch (Exception e) {
                         // e.printStackTrace();
-                        log.debug("갑자기 클라이언트 소켓이 닫혔을 시");
+                        log.info("갑자기 클라이언트 소켓이 닫혔을 시");
                         schn.close();
                         isRunning = false;
                         break;
@@ -207,13 +172,13 @@ public class SocketService {
 
                         result = result + new String(readByteArr, Charset.forName("UTF-8"));
 
-                        log.debug("[gwEmulThread #200] TID[ " + lThId + "] socketRead Start[" + result
+                        log.info("[gwEmulThread #200] TID[ " + lThId + "] socketRead Start[" + result
                                 + "], byteCount[" + byteCount + "], i[" + i + "]");
                         i++;
 
                         try {
                             byteCount = schn.read(readBuf);
-                            log.debug("[gwEmulThread #210] TID[" + result + "] byteCount :  " + byteCount);
+                            log.info("[gwEmulThread #210] TID[" + result + "] byteCount :  " + byteCount);
                         } catch (Exception e) {
                             e.printStackTrace();
                             // break;
@@ -221,11 +186,10 @@ public class SocketService {
 
                         boolean bEtxEnd = true; // 아래 while문을 실행할지 안할지
 
-                        // #ETX# 단위로 루프
                         while (!result.equals("") && bEtxEnd) {
 
                             //dockingResp();
-                            rentalResp();
+                            clasfy(result);
 
                             result = "";
                             bEtxEnd = false;
@@ -235,7 +199,7 @@ public class SocketService {
                     } // #ETX# 단위로 루프
                 } // byteCount > 0
 
-                log.debug("소켓 닫기");
+                log.info("소켓 닫기");
                 schn.close(); // 소켓 닫기
 
             } catch (Exception e) {
@@ -246,36 +210,22 @@ public class SocketService {
     }
 
 
-    public void rentalResp() throws IOException {
+    public String clasfy(String result) throws IOException {
+        sb.delete(0, sb.length()); // 초기화
 
-        log.info("rentalResp");
-//        ServletRequestAttributes ra = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-//        if (ra != null) {
-//
-//            log.info("이렇게밖에 못 얻나..");
-//            HttpServletRequest request = ra.getRequest();
-//            HttpServletResponse response = ra.getResponse();
-//
-//            PrintWriter out = response.getWriter();
-//
-//            out.print("ok");
-//            out.flush();
-//        }
+        log.info("clsfy: " + result);
 
-        HttpServletResponse response = globalVar.globalResponse.get("response");
+        sb.append("ddddd" + result);
 
-        if (response != null) {
-
-            log.info("이렇게밖에 못 얻나..");
-
-            PrintWriter out = response.getWriter();
-
-            out.print("ok");
-            out.flush();
-        }
-
-
+        return "okkkkk";
     }
+
+
+    public String ddddd(){
+        return sb.toString();
+    }
+
+
 
     public void dockingResp(){
 

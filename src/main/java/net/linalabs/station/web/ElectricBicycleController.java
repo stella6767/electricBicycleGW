@@ -27,16 +27,18 @@ public class ElectricBicycleController {
     private ObjectMapper objectMapper = new ObjectMapper();
 
     @PostMapping("/rental")
-    public void rentalRequest(@RequestBody CMReqDto rentalReq, HttpServletResponse response) throws IOException, ExecutionException, InterruptedException {
+    public String rentalRequest(@RequestBody CMReqDto rentalReq, HttpServletResponse response) throws IOException, ExecutionException, InterruptedException {
 
         log.info("전기자전거 대여요청 옴: " + rentalReq);
         rentalReq.setOpcode("rental");
         String jsonRespData = objectMapper.writeValueAsString(rentalReq);
         log.info("파싱된 대여요청 데이터: " + jsonRespData);
         socketService.sendToCharger(jsonRespData);
-        globalVar.globalResponse.put("response", response); //진짜 마음에 안 드는데..
 
-        //return completableFuture.get();
+        String aa = socketService.ddddd();
+
+        //return null;
+        return aa;
 
     }
 
