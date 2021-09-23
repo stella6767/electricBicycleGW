@@ -35,7 +35,7 @@ public class ElectricBicycleController {
         log.info("파싱된 대여요청 데이터: " + jsonRespData);
         socketService.sendToCharger(jsonRespData);
 
-        String aa = socketService.ddddd();
+        String aa = socketService.readSocketData();
 
         //return null;
         return aa;

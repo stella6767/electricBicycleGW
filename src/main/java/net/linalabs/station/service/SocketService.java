@@ -69,7 +69,7 @@ public class SocketService {
 
                     log.info("socket connected 5051 port");
                     globalVar.globalSocket.put("schn", schn);
-                    readSocketData();
+                    //readSocketData();
 
                 } catch (Exception e) {
                     //logger.debug("AsynchronousCloseException 터짐");
@@ -122,92 +122,66 @@ public class SocketService {
 
 
 
+    public String readSocketData() throws IOException { //일단 읽는 거 신경안쓰고,
 
-    public void readSocketData() throws IOException { //여기서 일괄적으로 RestTemplate으로 응답하는게 낫겠다.
-
-        log.info("docking 여부 리스닝 ");
         SocketChannel schn = globalVar.globalSocket.get("schn");
 
-        boolean isRunning = true; // 일단 추가, socketWork 중지할지 안 중지할지
+        ByteBuffer readBuf = ByteBuffer.allocate(10240);
 
-        while (isRunning && schn.isConnected()) {
+        Charset charset = Charset.forName("UTF-8");
 
-            try {
-                long lThId = Thread.currentThread().getId();
-                int byteCount = 0;
-                byte[] readByteArr;
+        if(schn.isConnected()) {
+            log.info("Socket channel이 정상적으로 연결되었고 버퍼를 읽습니다.");
 
-                // ByteBuffer readBuf = ByteBuffer.allocate(10); //버퍼 메모리 공간확보
-                ByteBuffer readBuf = ByteBuffer.allocate(10240);
+            schn.read(readBuf); // 클라이언트로부터 데이터 읽기
+            readBuf.flip();
+            //log.info("rental Received Data : " + charset.decode(readBuf).toString());
 
-                log.info("첫번째  while문");
 
-                // 무한 루프
-                String result = ""; // 요기서 초기화
-
-                while (byteCount >= 0) {
-
-                    try {
-
-                        byteCount = schn.read(readBuf); // 소켓채널에서 한번에 초과되는 버퍼사이즈의 데이터가 들어오면..
-
-                        log.info("[gwEmulThread #100] TID[" + "] byteCount :  " + byteCount);
-                        // logger.debug("isRunning why: " + isRunning);
-                    } catch (Exception e) {
-                        // e.printStackTrace();
-                        log.info("갑자기 클라이언트 소켓이 닫혔을 시");
-                        schn.close();
-                        isRunning = false;
-                        break;
-                    }
-
-                    int i = 0;
-
-                    // 버퍼에 값이 있다면 계속 버퍼에서 값을 읽어 result 를 완성한다.
-                    while (byteCount > 0) {
-
-                        readBuf.flip(); // 입력된 데이터를 읽기 위해 read-mode로 바꿈, positon이 데이터의 시작인 0으로 이동
-                        readByteArr = new byte[readBuf.remaining()]; // 현재 위치에서 limit까지 읽어드릴 수 있는 데이터의 개수를 리턴
-                        readBuf.get(readByteArr); // 데이터 읽기
-
-                        result = result + new String(readByteArr, Charset.forName("UTF-8"));
-
-                        log.info("[gwEmulThread #200] TID[ " + lThId + "] socketRead Start[" + result
-                                + "], byteCount[" + byteCount + "], i[" + i + "]");
-                        i++;
-
-                        try {
-                            byteCount = schn.read(readBuf);
-                            log.info("[gwEmulThread #210] TID[" + result + "] byteCount :  " + byteCount);
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                            // break;
-                        }
-
-                        boolean bEtxEnd = true; // 아래 while문을 실행할지 안할지
-
-                        while (!result.equals("") && bEtxEnd) {
-
-                            //dockingResp();
-                            clasfy(result);
-
-                            result = "";
-                            bEtxEnd = false;
-                            readBuf.clear();
-                        }
-
-                    } // #ETX# 단위로 루프
-                } // byteCount > 0
-
-                log.info("소켓 닫기");
-                schn.close(); // 소켓 닫기
-
-            } catch (Exception e) {
-                e.printStackTrace();
-                continue;
-            }
+        }else if(!schn.isConnected()) {
+            log.info("Socket channel이 연결이 끊어졌습니다.");
         }
+        //schn.close();
+
+        return charset.decode(readBuf).toString();
+        //return  CompletableFuture.completedFuture(charset.decode(readBuf).toString());
     }
+
+
+
+
+
+//    public String readSocketData() throws IOException { //여기서 일괄적으로 RestTemplate으로 응답하는게 낫겠다.
+//
+//        log.info("read socket Data");
+//        SocketChannel schn = globalVar.globalSocket.get("schn");
+//
+//        log.info("read socket data");
+//
+//        String result = "";
+//
+//        byte[] readByteArr;
+//
+//        // Client로부터 글자 받기
+//        ByteBuffer readBuf = ByteBuffer.allocate(10240);//read into buffer. 일단은 버퍼 초과 신경쓰지 않고
+//        schn.read(readBuf); // 클라이언트로부터 데이터 읽기
+//        readBuf.flip();
+//
+//        readByteArr = new byte[readBuf.remaining()];
+//        readBuf.get(readByteArr); // 데이터 읽기
+//        result = result + new String(readByteArr, Charset.forName("UTF-8")); // 어차피 여기서 계속 더하니까.
+//
+//        log.info("------------------------------처음 파싱되서 도착한 데이터---------------------------------------");
+//        log.info(result);
+//
+//        //clasfy(result, schn);
+//
+//        log.info("Received Data : " + result);
+//
+//
+//        schn.close(); //요기서 -1를 리턴해주는거만
+//        return result;
+//    }
 
 
     public String clasfy(String result) throws IOException {
