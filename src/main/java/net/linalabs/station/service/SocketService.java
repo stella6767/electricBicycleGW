@@ -249,19 +249,30 @@ public class SocketService {
     public void rentalResp() throws IOException {
 
         log.info("rentalResp");
-        ServletRequestAttributes ra = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-        if (ra != null) {
+//        ServletRequestAttributes ra = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+//        if (ra != null) {
+//
+//            log.info("이렇게밖에 못 얻나..");
+//            HttpServletRequest request = ra.getRequest();
+//            HttpServletResponse response = ra.getResponse();
+//
+//            PrintWriter out = response.getWriter();
+//
+//            out.print("ok");
+//            out.flush();
+//        }
+
+        HttpServletResponse response = globalVar.globalResponse.get("response");
+
+        if (response != null) {
 
             log.info("이렇게밖에 못 얻나..");
-            HttpServletRequest request = ra.getRequest();
-            HttpServletResponse response = ra.getResponse();
 
             PrintWriter out = response.getWriter();
 
             out.print("ok");
             out.flush();
         }
-
 
 
     }
