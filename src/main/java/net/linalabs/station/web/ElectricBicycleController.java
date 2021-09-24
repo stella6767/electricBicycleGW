@@ -7,6 +7,7 @@ import net.linalabs.station.config.GlobalVar;
 import net.linalabs.station.dto.Opcode;
 import net.linalabs.station.dto.req.CMReqDto;
 import net.linalabs.station.dto.req.ReqData;
+import net.linalabs.station.dto.resp.RespData;
 import net.linalabs.station.service.SocketService;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -25,24 +26,25 @@ public class ElectricBicycleController {
     private final GlobalVar globalVar;
 
 
-
-
-
     @PostMapping("/rental")
-    public String rentalRequest(@RequestBody ReqData rentalReq, HttpServletResponse response) throws IOException, ExecutionException, InterruptedException {
+    public RespData rentalRequest(@RequestBody ReqData rentalReq, HttpServletResponse response) throws IOException, ExecutionException, InterruptedException {
 
         log.info("전기자전거 대여요청 옴: " + rentalReq);
 
         CMReqDto cmReqDto = new CMReqDto(Opcode.RENTAL, rentalReq);//Opcode.RENTAL.getCode()
         socketService.sendToCharger(cmReqDto);
 
-        //globalVar.globalResponse.put("resp", response);
+        RespData respData = null;
 
-        //String aa = socketService.readSocketData();
-        //throw new MRentalException("aaaaa");
-        return null;
-        //return aa;
+        //timeOut을 설정해야 될 필요가 있슴.
+        while (respData == null){
+            respData = globalVar.globalDispatchData.get(rentalReq.getChargerid());
+        }
 
+        log.info("앱서버에 응답할 대여응답 데이터: " + respData);
+        globalVar.globalDispatchData.clear();
+
+        return respData;
     }
 
 

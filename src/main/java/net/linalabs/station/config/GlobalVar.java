@@ -1,5 +1,6 @@
 package net.linalabs.station.config;
 
+import net.linalabs.station.dto.resp.RespData;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 
@@ -21,7 +22,7 @@ public class GlobalVar {
 
     public ConcurrentHashMap<String, SocketChannel> globalSocket = new ConcurrentHashMap<>();
 
-    public ConcurrentHashMap<String, String> globalDispatchData = new ConcurrentHashMap<>();
+    public ConcurrentHashMap<Integer, RespData> globalDispatchData = new ConcurrentHashMap<>();
 
     //public ConcurrentHashMap<String, HttpServletResponse> globalResponse = new ConcurrentHashMap<>();
 

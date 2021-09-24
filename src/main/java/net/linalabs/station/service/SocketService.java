@@ -1,5 +1,6 @@
 package net.linalabs.station.service;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -13,9 +14,13 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 import org.springframework.http.*;
+import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriUtils;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -23,6 +28,9 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.concurrent.CompletableFuture;
 
 import static net.linalabs.station.dto.Opcode.RENTAL;
@@ -200,11 +208,13 @@ public class SocketService {
                     break;
 
                 case DOCKING:
+                    dockingRespProceed(result);
                     break;
 
                 case RETURN:
 
                     break;
+
 
             }
 
@@ -240,7 +250,7 @@ public class SocketService {
     }
 
 
-    public void initSocketChargerId(String result, SocketChannel schn){
+    public void initSocketChargerId(String result, SocketChannel schn){ //최초 chargeId global hashmap에 socketchannel 동기화
         System.out.println("init: " + result);
         String chargerId = String.valueOf(obj.get("data"));
         globalVar.globalSocket.put(chargerId, schn);
@@ -250,49 +260,47 @@ public class SocketService {
 
     public void rentalRespProceed(String result) throws JsonProcessingException {
 
+
         log.info("rental Resp: " + result);
-        CMRespDto cmRespDto = objectMapper.readValue(result, CMRespDto.class);
+        CMRespDto cmRespDto = objectMapper.readValue(result, CMRespDto.class); //여기서는 어쩔 수 없이 null값 포함. 나중에 메시지컨버터로 리턴할떄 어차피 빠지니
 
         log.info("파싱된 대여응답 데이터: " + cmRespDto);
 
-        //globalVar.globalDispatchData.put("","");
-
-        //바로 지우고
-
-
+        globalVar.globalDispatchData.put(cmRespDto.getData().getChargerId(), cmRespDto.getData());
     }
 
 
-//    public void dockingResp() {
-//
-//        headers.setContentType(MediaType.APPLICATION_JSON_UTF8);
-//
-//
-//        CMReqDto cmReqDto = CMReqDto.builder()
-//                .stationid(3)
-//                .chargerid(12)
-//                .docked(1)
-//                .mobilityid(15)
-//                .build();
-//
-//        log.info("cmReqDto: " + cmReqDto);
-//
-//        String jsonData = null;
-//
-//        try {
-//            jsonData = objectMapper.writeValueAsString(cmReqDto);
-//        } catch (JsonProcessingException e) {
-//            e.printStackTrace();
-//        }
-//
-//        HttpEntity<String> request = new HttpEntity<>(jsonData, headers);
-//
-//        ResponseEntity response = rt.exchange(globalVar.dockingUrl, HttpMethod.POST, request, String.class);
-//
-//        log.info("docking response: " + response.getBody());
-//
-//
-//    }
+    public void dockingRespProceed(String result) throws JsonProcessingException {
+
+        rt.getMessageConverters()
+                .add(0, new StringHttpMessageConverter(Charset.forName("UTF-8")));
+
+        log.info("docking Resp: " + result);
+        CMRespDto cmRespDto = objectMapper.readValue(result, CMRespDto.class);
+        log.info("파싱된 대여응답 데이터: " + cmRespDto);
+
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+        headers.setAccept(Collections.singletonList(MediaType.ALL));
+        headers.setAcceptCharset(Arrays.asList(Charset.forName("UTF-8")));
+
+        MultiValueMap<String, Integer> map= new LinkedMultiValueMap<String, Integer>();
+
+        map.add("stationid", cmRespDto.getData().getStationId());
+        map.add("chargerid", cmRespDto.getData().getChargerId());
+        map.add("slotno", cmRespDto.getData().getSlotno());
+        map.add("docked", cmRespDto.getData().getDocked());
+        map.add("mobilityid", cmRespDto.getData().getMobilityId());
+
+
+        HttpEntity<MultiValueMap<String, Integer>> request = new HttpEntity<MultiValueMap<String, Integer>>(map, headers);
+        ResponseEntity<String> response = rt.postForEntity(globalVar.dockingUrl, request , String.class );
+
+        //String decodedResult = UriUtils.decode(response.getBody(),"UTF-8");
+        log.info("docking response: " + response.getBody());
+        //log.info("docking response2: " + decodedResult);
+
+    }
+
 
 
 }

@@ -6,7 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-@JsonInclude(JsonInclude.Include.NON_ABSENT)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -18,5 +18,6 @@ public class RespData {
     private Integer stationId;
     private Integer chargerId;
     private Integer mobilityId;
+    private Integer slotno;
     private Integer docked;
 }
