@@ -2,6 +2,7 @@ package net.linalabs.station.config;
 
 import lombok.RequiredArgsConstructor;
 import net.linalabs.station.service.SocketService;
+import net.linalabs.station.utills.Common;
 import org.springframework.context.annotation.Configuration;
 
 import javax.annotation.PostConstruct;
@@ -20,13 +21,7 @@ public class Emulator {
     @PostConstruct
     public void socketStart() throws IOException, ExecutionException, InterruptedException {
 
-        CompletableFuture<SocketChannel> completableFuture = socketService.createServerSocket();
-        SocketChannel schn = completableFuture.get(); //block
-        //먼저 Staion Server를 킨 다음, charge를 켜서 연결한 다음 작동하도록
-        System.out.println("channel: " + schn);
-        socketService.readSocketData(schn);
-
-
+            socketService.serverSocketStart();
 
     }
 

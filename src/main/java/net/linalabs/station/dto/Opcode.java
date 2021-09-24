@@ -6,7 +6,7 @@ import lombok.Getter;
 @Getter
 public enum Opcode {
 
-    DOCKING("docking"), RENTAL("rental"), RETURN("return");
+    DOCKING("docking"), RENTAL("rental"), RETURN("return"), INIT("");
 
     String code;
 

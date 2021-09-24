@@ -11,7 +11,7 @@ import java.nio.charset.CharsetEncoder;
 @Slf4j
 public class Common {
 
-    private static final Integer[] chargerIds = {1,2,3,4,5};
+    //public static final Integer[] chargerIds = {1,2,3,4,5};
 
     public static ByteBuffer str_to_bb(String msg) {
         Charset charset = Charset.forName("UTF-8");

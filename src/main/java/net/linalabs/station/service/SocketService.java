@@ -1,9 +1,13 @@
 package net.linalabs.station.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.linalabs.station.config.GlobalVar;
+import net.linalabs.station.dto.Opcode;
+import net.linalabs.station.dto.req.CMReqDto;
+import net.linalabs.station.dto.resp.CMRespDto;
 import net.linalabs.station.utills.Common;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -21,6 +25,8 @@ import java.nio.channels.SocketChannel;
 import java.nio.charset.Charset;
 import java.util.concurrent.CompletableFuture;
 
+import static net.linalabs.station.dto.Opcode.RENTAL;
+
 @Slf4j
 @RequiredArgsConstructor
 @Service
@@ -31,48 +37,13 @@ public class SocketService {
     HttpHeaders headers = new HttpHeaders();
     ObjectMapper objectMapper = new ObjectMapper();
     private StringBuffer sb = new StringBuffer();
-
-
-    public Integer chargerid; //요렇게 하는 게 맞나싶다..
-
-
-//    public void setChargerid(Integer chargerid){
-//        this.chargerid = chargerid;
-//    }
+    JSONParser parser = new JSONParser();
+    JSONObject obj;
 
 
 
     @Async
-    public CompletableFuture<SocketChannel> createServerSocket() {
-        ServerSocketChannel serverSocketChannel = null; // ServerSocketChannel은 하나
-        SocketChannel schn = null;
-
-
-        try {
-            serverSocketChannel = ServerSocketChannel.open();
-            serverSocketChannel.bind(new InetSocketAddress(globalVar.socketPort)); // socket().
-            log.info("socketStart");
-
-            try {
-                log.info("socket이 연결이 될 때까지 블록킹");
-                schn = serverSocketChannel.accept(); // 이 부분에서 연결이 될때까지 블로킹
-                schn.configureBlocking(true); // 블록킹 방식
-                log.info("socket connected 5051 port");
-
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-
-        } catch (Exception e1) {
-            e1.printStackTrace();
-        }
-
-        return CompletableFuture.completedFuture(schn); // 다른 대안 탐색중..
-    }
-
-
-    @Async
-    public void emulSocketStart() {
+    public void serverSocketStart() {
 
         try {
 
@@ -95,13 +66,9 @@ public class SocketService {
                     schn.configureBlocking(true); // 블록킹 방식
 
                     log.info("socket connected 5051 port");
-                    //globalVar.globalSocket.put("schn", schn);
                     readSocketData(schn);
 
                 } catch (Exception e) {
-                    //logger.debug("AsynchronousCloseException 터짐");
-                    //socketChannel.close();
-
                     e.printStackTrace();
                     try {
                         Thread.sleep(5000);
@@ -127,58 +94,11 @@ public class SocketService {
     }
 
 
-    @Async
-    public void sendToCharger(String jsonData) throws IOException { //일단 읽는 거 신경안쓰고,
 
-        SocketChannel schn = globalVar.globalSocket.get("schn"); //여기서 인자로 stationId를
+    //@Async //해야될지도?
+    public void readSocketData(SocketChannel schn) throws IOException {
 
-
-
-        ByteBuffer writeBuf = ByteBuffer.allocate(10240);
-
-        if (schn.isConnected()) {
-            log.info("Socket channel이 정상적으로 연결되었고 버퍼를 씁니다.");
-            writeBuf = Common.str_to_bb(jsonData);
-            schn.write(writeBuf);
-
-
-        } else if (!schn.isConnected()) {
-            log.info("Socket channel이 연결이 끊어졌습니다.");
-        }
-
-    }
-
-
-//    public String readSocketData() throws IOException { //일단 읽는 거 신경안쓰고,
-//
-//        SocketChannel schn = globalVar.globalSocket.get("schn");
-//
-//        ByteBuffer readBuf = ByteBuffer.allocate(10240);
-//
-//        Charset charset = Charset.forName("UTF-8");
-//
-//        if(schn.isConnected()) {
-//            log.info("Socket channel이 정상적으로 연결되었고 버퍼를 읽습니다.");
-//
-//            schn.read(readBuf); // 클라이언트로부터 데이터 읽기
-//            readBuf.flip();
-//            //log.info("rental Received Data : " + charset.decode(readBuf).toString());
-//
-//
-//        }else if(!schn.isConnected()) {
-//            log.info("Socket channel이 연결이 끊어졌습니다.");
-//        }
-//
-//        return charset.decode(readBuf).toString();
-//        //return  CompletableFuture.completedFuture(charset.decode(readBuf).toString());
-//    }
-
-
-    //@Async
-    public void readSocketData(SocketChannel schn) throws IOException { //여기서 일괄적으로 RestTemplate으로 응답하는게 낫겠다.
-
-        log.info("docking 여부 리스닝 ");
-        //SocketChannel schn = globalVar.globalSocket.get("schn");
+        log.info("read Charger Socket Client ");
 
         boolean isRunning = true; // 일단 추가, socketWork 중지할지 안 중지할지
 
@@ -237,9 +157,7 @@ public class SocketService {
 
                         while (!result.equals("") && bEtxEnd) {
 
-//                            globalVar.globalSocket.put("chargerid", );
-                            //dockingResp();
-                            clasfy(result);
+                            clasfy(result, schn);
 
                             result = "";
                             bEtxEnd = false;
@@ -260,59 +178,86 @@ public class SocketService {
     }
 
 
-    public void clasfy(String result) throws IOException {
-
-        log.info("clsfy: " + result);
-
-        JSONParser parser = new JSONParser();
-        JSONObject obj;
+    public void clasfy(String result, SocketChannel schn) throws IOException {
+        //여기서 일괄적으로 RestTemplate으로 응답하는게 낫겠다.
+        log.info("clasfy 분류: " + result);
 
         try {
             obj = (JSONObject) parser.parse(result);
-            String opCode = String.valueOf(obj.get("opcode"));
+            String opcode = String.valueOf(obj.get("opcode"));
+
+            Opcode opCode = Opcode.valueOf(opcode);
+
+            log.info("Opcode: " + opCode);
 
             switch (opCode) {
-
-                case "rental":
+                case INIT:
+                    initSocketChargerId(result, schn);
                     break;
 
-                case "return":
-
+                case RENTAL:
+                    rentalRespProceed(result);
                     break;
 
-                case "docking":
+                case DOCKING:
+                    break;
+
+                case RETURN:
 
                     break;
 
             }
 
-
         } catch (ParseException e) {
             e.printStackTrace();
         }
 
-        //if(result.) 여기서 동기화를 해야겠구만..
+    }
 
-        //globalVar.globalSocket.put("chargerid", );
+    @Async
+    public void sendToCharger(CMReqDto cmReqDto) throws IOException { //일단 읽는 거 신경안쓰고,
 
-        //throw new MRentalException(result); //다른 스레드에서는 안 먹히네..
+        log.info("App server에사 보내는 chargeId: " + cmReqDto.getData().getChargerid());
 
-//        HttpServletResponse response =  globalVar.globalResponse.get("resp");
-//
-//        PrintWriter out = response.getWriter();
-//
-//        out.println(result);
-//        out.flush();
+        String chargeId = String.valueOf(cmReqDto.getData().getChargerid());
+
+        SocketChannel schn = globalVar.globalSocket.get(chargeId); //여기서 인자로 stationId를
+        String jsonData = objectMapper.writeValueAsString(cmReqDto);
+        log.info("파싱된 대여요청 데이터: " + jsonData);
+
+        ByteBuffer writeBuf = ByteBuffer.allocate(10240);
+
+        if (schn.isConnected()) {
+            log.info("Socket channel이 정상적으로 연결되었고 버퍼를 씁니다.");
+            writeBuf = Common.str_to_bb(jsonData);
+            schn.write(writeBuf);
+
+
+        } else if (!schn.isConnected()) {
+            log.info("Socket channel이 연결이 끊어졌습니다.");
+        }
 
     }
 
 
-    public void restAPi() {
+    public void initSocketChargerId(String result, SocketChannel schn){
+        System.out.println("init: " + result);
+        String chargerId = String.valueOf(obj.get("data"));
+        globalVar.globalSocket.put(chargerId, schn);
+    }
 
-        //channelId..
-        //여기서 끄내고 바로지우고,
 
-        globalVar.globalDispatchData.put("", "");
+
+    public void rentalRespProceed(String result) throws JsonProcessingException {
+
+        log.info("rental Resp: " + result);
+        CMRespDto cmRespDto = objectMapper.readValue(result, CMRespDto.class);
+
+        log.info("파싱된 대여응답 데이터: " + cmRespDto);
+
+        //globalVar.globalDispatchData.put("","");
+
+        //바로 지우고
 
 
     }

@@ -24,7 +24,6 @@ public class ElectricBicycleController {
     private final SocketService socketService;
     private final GlobalVar globalVar;
 
-    private ObjectMapper objectMapper = new ObjectMapper();
 
 
 
@@ -33,18 +32,9 @@ public class ElectricBicycleController {
     public String rentalRequest(@RequestBody ReqData rentalReq, HttpServletResponse response) throws IOException, ExecutionException, InterruptedException {
 
         log.info("전기자전거 대여요청 옴: " + rentalReq);
-        //opCode는 나중에 enum으로 분류
-
-        socketService.chargerid = rentalReq.getChargerid();
 
         CMReqDto cmReqDto = new CMReqDto(Opcode.RENTAL, rentalReq);//Opcode.RENTAL.getCode()
-
-        String jsonRespData = objectMapper.writeValueAsString(cmReqDto);
-        log.info("파싱된 대여요청 데이터: " + jsonRespData);
-        socketService.sendToCharger(jsonRespData);
-
-
-
+        socketService.sendToCharger(cmReqDto);
 
         //globalVar.globalResponse.put("resp", response);
 

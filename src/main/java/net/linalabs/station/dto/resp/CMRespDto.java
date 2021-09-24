@@ -11,9 +11,9 @@ import net.linalabs.station.dto.Opcode;
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
-public class CMRespDto<T> {
+public class CMRespDto {
 
     private Opcode opcode; //추가
-    private T data;
+    private RespData data;
 }
 
