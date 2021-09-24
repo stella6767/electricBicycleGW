@@ -6,6 +6,9 @@ import org.springframework.context.annotation.Configuration;
 
 import javax.servlet.http.HttpServletResponse;
 import java.nio.channels.SocketChannel;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Configuration
@@ -20,10 +23,16 @@ public class GlobalVar {
     @Value("${dockingUrl}")
     public String dockingUrl;
 
+    @Value("${statusUpdateUrl}")
+    public String statusUpdateUrl;
+
     public ConcurrentHashMap<String, SocketChannel> globalSocket = new ConcurrentHashMap<>();
 
     public ConcurrentHashMap<Integer, RespData> globalDispatchData = new ConcurrentHashMap<>();
 
-    //public ConcurrentHashMap<String, HttpServletResponse> globalResponse = new ConcurrentHashMap<>();
+    public List<RespData> globalUpdateList = Collections.synchronizedList(new ArrayList<>());
+
+    //public List<ConcurrentHashMap<Integer,RespData>> globalUpdateList = Collections.synchronizedList(new ArrayList<>());
+
 
 }

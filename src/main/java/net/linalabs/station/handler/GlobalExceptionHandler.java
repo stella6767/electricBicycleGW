@@ -17,11 +17,10 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 public class GlobalExceptionHandler {
 
 
-    @ExceptionHandler(value= MRentalException.class)
-    public String 임시방편(MRentalException e) {
+    @ExceptionHandler(value= TimeOutException.class)
+    public String timeOutException(TimeOutException e) {
 
-        log.info("이렇게 해도 되나..: " + e.getMessage());
-
+        log.info("timeOutError 뜸 " + e.getMessage());
         return e.getMessage();
     }
 

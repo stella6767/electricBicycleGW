@@ -13,11 +13,12 @@ import lombok.NoArgsConstructor;
 @Data
 public class RespData {
 
-    private Integer result_code;
+    private Integer result_code; //0은 성공, 1은 실패
     private String result_message;
     private Integer stationId;
     private Integer chargerId;
     private Integer mobilityId;
     private Integer slotno;
     private Integer docked;
+    private Integer battery;
 }

@@ -17,6 +17,7 @@ import org.json.simple.parser.ParseException;
 import org.springframework.http.*;
 import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -30,10 +31,10 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 import static net.linalabs.station.dto.Opcode.RENTAL;
 
@@ -205,6 +206,10 @@ public class SocketService {
                     initSocketChargerId(result, schn);
                     break;
 
+                case UPDATE:
+                    updateRespProceed(result);
+                    break;
+
                 case RENTAL:
                     rentalRespProceed(result);
                     break;
@@ -226,6 +231,59 @@ public class SocketService {
 
     }
 
+    
+    public void updateRespProceed(String result) throws IOException { //요거는 소켓에서 정보를 다 보내줘여..
+
+        rt.getMessageConverters()
+                .add(0, new StringHttpMessageConverter(Charset.forName("UTF-8")));
+
+        log.info("docking Resp: " + result);
+        CMRespDto cmRespDto = objectMapper.readValue(result, CMRespDto.class);
+        log.info("파싱된 업데이트 데이터: " + cmRespDto);
+
+        ConcurrentHashMap<Integer, RespData> updateData = new ConcurrentHashMap<>();
+        updateData.put(cmRespDto.getData().getChargerId(), cmRespDto.getData());
+
+        //중복제거를 위해
+        //RespData data = updateData.get(cmRespDto.getData().getChargerId());
+
+        List list = new ArrayList(updateData.values());
+
+        log.info("중복제거된 list...: " + list);
+
+        globalVar.globalUpdateList = list;
+
+        //globalVar.globalUpdateList.add(updateData); //중복제거는 chargeId 기준으로 해야 되는데..
+        //globalVar.globalUpdateList.stream().map(d-> d.getChargerId() == data.getChargerId()).collect(Collectors.toList());
+
+    }
+
+
+    @Scheduled(fixedDelay = 1000 * 10)
+    public void scheuledUpdate() throws JsonProcessingException {
+
+
+        log.info("1분마다 App 서버로 정보 전송 " + globalVar.globalUpdateList);
+
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+        headers.setAccept(Collections.singletonList(MediaType.ALL));
+        headers.setAcceptCharset(Arrays.asList(Charset.forName("UTF-8")));
+
+        MultiValueMap<String, List> map= new LinkedMultiValueMap<String, List>();
+
+        //List list = new ArrayList(globalVar.globalUpdateList.get)
+
+        map.add("statlist", globalVar.globalUpdateList);
+        log.info("statlist: " +map.toString());
+
+        HttpEntity<MultiValueMap<String, List>> request = new HttpEntity<MultiValueMap<String, List>>(map, headers);
+        ResponseEntity<RespData> response = rt.postForEntity(globalVar.dockingUrl, request , RespData.class );
+
+        log.info("상시정보 업데이트 응답됨: " + response); //에러.........
+
+    }
+    
+    
     @Async
     public void sendToCharger(CMReqDto cmReqDto) throws IOException { //일단 읽는 거 신경안쓰고,
 
@@ -276,7 +334,7 @@ public class SocketService {
 
         SocketChannel schn = globalVar.globalSocket.get(chargeId); //여기서 인자로 stationId를
         String jsonData = objectMapper.writeValueAsString(cmRespDto);
-        log.info("파싱된 대여요청 데이터: " + jsonData);
+        log.info("파싱된 도킹여부 데이터: " + jsonData);
 
         ByteBuffer writeBuf = ByteBuffer.allocate(10240);
 
@@ -314,6 +372,7 @@ public class SocketService {
         map.add("docked", cmRespDto.getData().getDocked());
         map.add("mobilityid", cmRespDto.getData().getMobilityId());
 
+        //log.info("docking map: " +map.toString());
 
         HttpEntity<MultiValueMap<String, Integer>> request = new HttpEntity<MultiValueMap<String, Integer>>(map, headers);
         ResponseEntity<RespData> response = rt.postForEntity(globalVar.dockingUrl, request , RespData.class );
@@ -335,57 +394,12 @@ public class SocketService {
             System.out.println("도킹 성공: " + dockingRespDto);
             sendToChargerDocking(dockingRespDto);
         }
-
-
+        
         //log.info("docking response2: " + decodedResult);
 
     }
 
-
-
-//    public void dockingRespProceed(String result) throws JsonProcessingException {
-//
-//        rt.getMessageConverters()
-//                .add(0, new StringHttpMessageConverter(Charset.forName("UTF-8")));
-//
-//        log.info("docking Resp: " + result);
-//
-//        HashMap<String, CMRespDto> hashMap = objectMapper.readValue(result, HashMap.class);
-//        log.info("도킹요청 파싱:  " + hashMap.get("data"));
-//        //String parseData = String.valueOf(hashMap.get("data"));
-//        Integer chargerId =  Integer.parseInt((objectMapper.writeValueAsString(hashMap.get("data"))));
-//
-//        log.info("chargerId: " + chargerId);
-//
-//        RespData respData = null;
-//
-//        while (respData == null){
-//            respData = globalVar.globalDispatchData.get(chargerId);
-//        }
-//
-//        log.info("요거는 동기니까 상관없겠지? 데이터: " + respData);
-//
-//        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
-//        headers.setAccept(Collections.singletonList(MediaType.ALL));
-//        headers.setAcceptCharset(Arrays.asList(Charset.forName("UTF-8")));
-//
-//        MultiValueMap<String, Integer> map= new LinkedMultiValueMap<String, Integer>();
-//
-//        map.add("stationid", respData.getStationId());
-//        map.add("chargerid", respData.getChargerId());
-//        map.add("slotno", respData.getSlotno());
-//        map.add("docked", respData.getDocked());
-//        map.add("mobilityid", respData.getMobilityId());
-//
-//
-//        HttpEntity<MultiValueMap<String, Integer>> request = new HttpEntity<MultiValueMap<String, Integer>>(map, headers);
-//        ResponseEntity<String> response = rt.postForEntity(globalVar.dockingUrl, request , String.class );
-//
-//        //String decodedResult = UriUtils.decode(response.getBody(),"UTF-8");
-//        log.info("docking response: " + response.getBody());
-//        //log.info("docking response2: " + decodedResult);
-//
-//    }
+    
 
 
 }
