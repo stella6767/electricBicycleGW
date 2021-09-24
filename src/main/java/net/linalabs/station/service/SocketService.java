@@ -9,6 +9,7 @@ import net.linalabs.station.config.GlobalVar;
 import net.linalabs.station.dto.Opcode;
 import net.linalabs.station.dto.req.CMReqDto;
 import net.linalabs.station.dto.resp.CMRespDto;
+import net.linalabs.station.dto.resp.RespData;
 import net.linalabs.station.utills.Common;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -31,6 +32,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.concurrent.CompletableFuture;
 
 import static net.linalabs.station.dto.Opcode.RENTAL;
@@ -259,18 +261,39 @@ public class SocketService {
 
 
     public void rentalRespProceed(String result) throws JsonProcessingException {
-
-
         log.info("rental Resp: " + result);
         CMRespDto cmRespDto = objectMapper.readValue(result, CMRespDto.class); //여기서는 어쩔 수 없이 null값 포함. 나중에 메시지컨버터로 리턴할떄 어차피 빠지니
-
         log.info("파싱된 대여응답 데이터: " + cmRespDto);
-
         globalVar.globalDispatchData.put(cmRespDto.getData().getChargerId(), cmRespDto.getData());
     }
 
+    //도킹 성공이나 해제 여부를 충전기에게 알려줌.
+    public void sendToChargerDocking(CMRespDto cmRespDto) throws IOException { //일단 읽는 거 신경안쓰고,
 
-    public void dockingRespProceed(String result) throws JsonProcessingException {
+        log.info("Docking chargeId: " + cmRespDto.getData().getChargerId());
+
+        String chargeId = String.valueOf(cmRespDto.getData().getChargerId());
+
+        SocketChannel schn = globalVar.globalSocket.get(chargeId); //여기서 인자로 stationId를
+        String jsonData = objectMapper.writeValueAsString(cmRespDto);
+        log.info("파싱된 대여요청 데이터: " + jsonData);
+
+        ByteBuffer writeBuf = ByteBuffer.allocate(10240);
+
+        if (schn.isConnected()) {
+            log.info("Socket channel이 정상적으로 연결되었고 버퍼를 씁니다.");
+            writeBuf = Common.str_to_bb(jsonData);
+            schn.write(writeBuf);
+
+
+        } else if (!schn.isConnected()) {
+            log.info("Socket channel이 연결이 끊어졌습니다.");
+        }
+
+    }
+
+
+    public void dockingRespProceed(String result) throws IOException { //요거는 소켓에서 정보를 다 보내줘여..
 
         rt.getMessageConverters()
                 .add(0, new StringHttpMessageConverter(Charset.forName("UTF-8")));
@@ -293,14 +316,76 @@ public class SocketService {
 
 
         HttpEntity<MultiValueMap<String, Integer>> request = new HttpEntity<MultiValueMap<String, Integer>>(map, headers);
-        ResponseEntity<String> response = rt.postForEntity(globalVar.dockingUrl, request , String.class );
+        ResponseEntity<RespData> response = rt.postForEntity(globalVar.dockingUrl, request , RespData.class );
 
         //String decodedResult = UriUtils.decode(response.getBody(),"UTF-8");
         log.info("docking response: " + response.getBody());
+
+        if(response.getBody().getResult_code() == 0 && cmRespDto.getData().getDocked() == 2){
+
+            response.getBody().setChargerId(cmRespDto.getData().getChargerId());
+            CMRespDto dockingRespDto = new CMRespDto(Opcode.DOCKING, response.getBody());
+            System.out.println("도킹 해제, 충전기 mobilityId를 0으로 초기화: " + dockingRespDto);
+            sendToChargerDocking(dockingRespDto);
+
+        }else if(response.getBody().getResult_code() == 0 && cmRespDto.getData().getDocked() == 1){
+
+            response.getBody().setChargerId(cmRespDto.getData().getChargerId());
+            CMRespDto dockingRespDto = new CMRespDto(Opcode.DOCKING, response.getBody());
+            System.out.println("도킹 성공: " + dockingRespDto);
+            sendToChargerDocking(dockingRespDto);
+        }
+
+
         //log.info("docking response2: " + decodedResult);
 
     }
 
+
+
+//    public void dockingRespProceed(String result) throws JsonProcessingException {
+//
+//        rt.getMessageConverters()
+//                .add(0, new StringHttpMessageConverter(Charset.forName("UTF-8")));
+//
+//        log.info("docking Resp: " + result);
+//
+//        HashMap<String, CMRespDto> hashMap = objectMapper.readValue(result, HashMap.class);
+//        log.info("도킹요청 파싱:  " + hashMap.get("data"));
+//        //String parseData = String.valueOf(hashMap.get("data"));
+//        Integer chargerId =  Integer.parseInt((objectMapper.writeValueAsString(hashMap.get("data"))));
+//
+//        log.info("chargerId: " + chargerId);
+//
+//        RespData respData = null;
+//
+//        while (respData == null){
+//            respData = globalVar.globalDispatchData.get(chargerId);
+//        }
+//
+//        log.info("요거는 동기니까 상관없겠지? 데이터: " + respData);
+//
+//        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+//        headers.setAccept(Collections.singletonList(MediaType.ALL));
+//        headers.setAcceptCharset(Arrays.asList(Charset.forName("UTF-8")));
+//
+//        MultiValueMap<String, Integer> map= new LinkedMultiValueMap<String, Integer>();
+//
+//        map.add("stationid", respData.getStationId());
+//        map.add("chargerid", respData.getChargerId());
+//        map.add("slotno", respData.getSlotno());
+//        map.add("docked", respData.getDocked());
+//        map.add("mobilityid", respData.getMobilityId());
+//
+//
+//        HttpEntity<MultiValueMap<String, Integer>> request = new HttpEntity<MultiValueMap<String, Integer>>(map, headers);
+//        ResponseEntity<String> response = rt.postForEntity(globalVar.dockingUrl, request , String.class );
+//
+//        //String decodedResult = UriUtils.decode(response.getBody(),"UTF-8");
+//        log.info("docking response: " + response.getBody());
+//        //log.info("docking response2: " + decodedResult);
+//
+//    }
 
 
 }

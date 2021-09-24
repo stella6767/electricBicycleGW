@@ -13,8 +13,8 @@ import lombok.NoArgsConstructor;
 @Data
 public class RespData {
 
-    private Integer resultCode;
-    private String resultMsg;
+    private Integer result_code;
+    private String result_message;
     private Integer stationId;
     private Integer chargerId;
     private Integer mobilityId;
