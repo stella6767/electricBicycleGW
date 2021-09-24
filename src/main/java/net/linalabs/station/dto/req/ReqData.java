@@ -1,4 +1,4 @@
-package net.linalabs.station.dto;
+package net.linalabs.station.dto.req;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
@@ -11,9 +11,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
-public class CMReqDto {
+public class ReqData {
 
-    private String opcode; //대여인지, 반납인지 결정
     private Integer docked;
     private Integer stationid;
     private Integer mobilityid;

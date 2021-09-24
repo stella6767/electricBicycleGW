@@ -1,22 +1,18 @@
-package net.linalabs.station.dto;
-
+package net.linalabs.station.dto.req;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import net.linalabs.station.dto.Opcode;
 
 
-@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
-public class DockingReqDto {
+public class CMReqDto<T> {
 
-    private Integer stationid;
-    private Integer chargerid;
-    private Integer docked;
-    private Integer mobilityid;
-
+    private Opcode opcode; //추가
+    private T data;
 }

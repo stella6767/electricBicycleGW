@@ -1,13 +1,13 @@
 package net.linalabs.station.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.linalabs.station.config.GlobalVar;
-import net.linalabs.station.dto.CMReqDto;
-import net.linalabs.station.handler.MRentalException;
 import net.linalabs.station.utills.Common;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 import org.springframework.http.*;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -19,6 +19,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.Charset;
+import java.util.concurrent.CompletableFuture;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -31,6 +32,43 @@ public class SocketService {
     ObjectMapper objectMapper = new ObjectMapper();
     private StringBuffer sb = new StringBuffer();
 
+
+    public Integer chargerid; //요렇게 하는 게 맞나싶다..
+
+
+//    public void setChargerid(Integer chargerid){
+//        this.chargerid = chargerid;
+//    }
+
+
+
+    @Async
+    public CompletableFuture<SocketChannel> createServerSocket() {
+        ServerSocketChannel serverSocketChannel = null; // ServerSocketChannel은 하나
+        SocketChannel schn = null;
+
+
+        try {
+            serverSocketChannel = ServerSocketChannel.open();
+            serverSocketChannel.bind(new InetSocketAddress(globalVar.socketPort)); // socket().
+            log.info("socketStart");
+
+            try {
+                log.info("socket이 연결이 될 때까지 블록킹");
+                schn = serverSocketChannel.accept(); // 이 부분에서 연결이 될때까지 블로킹
+                schn.configureBlocking(true); // 블록킹 방식
+                log.info("socket connected 5051 port");
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+        } catch (Exception e1) {
+            e1.printStackTrace();
+        }
+
+        return CompletableFuture.completedFuture(schn); // 다른 대안 탐색중..
+    }
 
 
     @Async
@@ -57,8 +95,8 @@ public class SocketService {
                     schn.configureBlocking(true); // 블록킹 방식
 
                     log.info("socket connected 5051 port");
-                    globalVar.globalSocket.put("schn", schn);
-                    readSocketData();
+                    //globalVar.globalSocket.put("schn", schn);
+                    readSocketData(schn);
 
                 } catch (Exception e) {
                     //logger.debug("AsynchronousCloseException 터짐");
@@ -89,26 +127,26 @@ public class SocketService {
     }
 
 
-
-
     @Async
     public void sendToCharger(String jsonData) throws IOException { //일단 읽는 거 신경안쓰고,
 
-        SocketChannel schn = globalVar.globalSocket.get("schn");
+        SocketChannel schn = globalVar.globalSocket.get("schn"); //여기서 인자로 stationId를
+
+
+
         ByteBuffer writeBuf = ByteBuffer.allocate(10240);
 
-        if(schn.isConnected()) {
+        if (schn.isConnected()) {
             log.info("Socket channel이 정상적으로 연결되었고 버퍼를 씁니다.");
             writeBuf = Common.str_to_bb(jsonData);
             schn.write(writeBuf);
 
 
-        }else if(!schn.isConnected()) {
+        } else if (!schn.isConnected()) {
             log.info("Socket channel이 연결이 끊어졌습니다.");
         }
 
     }
-
 
 
 //    public String readSocketData() throws IOException { //일단 읽는 거 신경안쓰고,
@@ -136,11 +174,11 @@ public class SocketService {
 //    }
 
 
-
-    public void readSocketData() throws IOException { //여기서 일괄적으로 RestTemplate으로 응답하는게 낫겠다.
+    //@Async
+    public void readSocketData(SocketChannel schn) throws IOException { //여기서 일괄적으로 RestTemplate으로 응답하는게 낫겠다.
 
         log.info("docking 여부 리스닝 ");
-        SocketChannel schn = globalVar.globalSocket.get("schn");
+        //SocketChannel schn = globalVar.globalSocket.get("schn");
 
         boolean isRunning = true; // 일단 추가, socketWork 중지할지 안 중지할지
 
@@ -199,7 +237,7 @@ public class SocketService {
 
                         while (!result.equals("") && bEtxEnd) {
 
-
+//                            globalVar.globalSocket.put("chargerid", );
                             //dockingResp();
                             clasfy(result);
 
@@ -222,55 +260,94 @@ public class SocketService {
     }
 
 
-
     public void clasfy(String result) throws IOException {
 
         log.info("clsfy: " + result);
 
-        //throw new MRentalException(result); //다른 스레드에서는 안 먹히네..
-
-        rt.getForEntity("http://localhost:8080/rental2", String.class);
-        
-
-    }
-
-
-    public String ddddd(){
-        return sb.toString();
-    }
-
-
-
-    public void dockingResp(){
-
-        headers.setContentType(MediaType.APPLICATION_JSON_UTF8);
-
-
-        CMReqDto cmReqDto = CMReqDto.builder()
-                .stationid(3)
-                .chargerid(12)
-                .docked(1)
-                .mobilityid(15)
-                .build();
-
-        log.info("cmReqDto: " + cmReqDto);
-
-        String jsonData = null;
+        JSONParser parser = new JSONParser();
+        JSONObject obj;
 
         try {
-            jsonData = objectMapper.writeValueAsString(cmReqDto);
-        } catch (JsonProcessingException e) {
+            obj = (JSONObject) parser.parse(result);
+            String opCode = String.valueOf(obj.get("opcode"));
+
+            switch (opCode) {
+
+                case "rental":
+                    break;
+
+                case "return":
+
+                    break;
+
+                case "docking":
+
+                    break;
+
+            }
+
+
+        } catch (ParseException e) {
             e.printStackTrace();
         }
 
-        HttpEntity<String> request = new HttpEntity<>(jsonData, headers);
+        //if(result.) 여기서 동기화를 해야겠구만..
 
-        ResponseEntity response = rt.exchange(globalVar.dockingUrl, HttpMethod.POST, request, String.class);
+        //globalVar.globalSocket.put("chargerid", );
 
-        log.info("docking response: " + response.getBody());
+        //throw new MRentalException(result); //다른 스레드에서는 안 먹히네..
+
+//        HttpServletResponse response =  globalVar.globalResponse.get("resp");
+//
+//        PrintWriter out = response.getWriter();
+//
+//        out.println(result);
+//        out.flush();
+
+    }
+
+
+    public void restAPi() {
+
+        //channelId..
+        //여기서 끄내고 바로지우고,
+
+        globalVar.globalDispatchData.put("", "");
 
 
     }
+
+
+//    public void dockingResp() {
+//
+//        headers.setContentType(MediaType.APPLICATION_JSON_UTF8);
+//
+//
+//        CMReqDto cmReqDto = CMReqDto.builder()
+//                .stationid(3)
+//                .chargerid(12)
+//                .docked(1)
+//                .mobilityid(15)
+//                .build();
+//
+//        log.info("cmReqDto: " + cmReqDto);
+//
+//        String jsonData = null;
+//
+//        try {
+//            jsonData = objectMapper.writeValueAsString(cmReqDto);
+//        } catch (JsonProcessingException e) {
+//            e.printStackTrace();
+//        }
+//
+//        HttpEntity<String> request = new HttpEntity<>(jsonData, headers);
+//
+//        ResponseEntity response = rt.exchange(globalVar.dockingUrl, HttpMethod.POST, request, String.class);
+//
+//        log.info("docking response: " + response.getBody());
+//
+//
+//    }
 
 
 }

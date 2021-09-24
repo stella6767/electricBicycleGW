@@ -14,8 +14,6 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @Slf4j
 @RequiredArgsConstructor
 @RestControllerAdvice(basePackages = {"net.linalabs.station"})
-//@RestController //데이터를 리턴하기 위해서
-//@ControllerAdvice //모든 익셉션을 낚아챔.
 public class GlobalExceptionHandler {
 
 

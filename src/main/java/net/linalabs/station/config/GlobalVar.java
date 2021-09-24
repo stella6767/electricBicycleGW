@@ -21,6 +21,8 @@ public class GlobalVar {
 
     public ConcurrentHashMap<String, SocketChannel> globalSocket = new ConcurrentHashMap<>();
 
-    public ConcurrentHashMap<String, HttpServletResponse> globalResponse = new ConcurrentHashMap<>();
+    public ConcurrentHashMap<String, String> globalDispatchData = new ConcurrentHashMap<>();
+
+    //public ConcurrentHashMap<String, HttpServletResponse> globalResponse = new ConcurrentHashMap<>();
 
 }
