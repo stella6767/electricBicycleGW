@@ -241,12 +241,11 @@ public class SocketService {
         CMRespDto cmRespDto = objectMapper.readValue(result, CMRespDto.class);
         log.info("파싱된 업데이트 데이터: " + cmRespDto);
 
-        ConcurrentHashMap<Integer, RespData> updateData = new ConcurrentHashMap<>();
-        updateData.put(cmRespDto.getData().getChargerId(), cmRespDto.getData());
 
         //중복제거를 위해
+        ConcurrentHashMap<Integer, RespData> updateData = new ConcurrentHashMap<>();
+        updateData.put(cmRespDto.getData().getChargerid(), cmRespDto.getData());
         //RespData data = updateData.get(cmRespDto.getData().getChargerId());
-
         List list = new ArrayList(updateData.values());
 
         log.info("중복제거된 list...: " + list);
@@ -262,25 +261,24 @@ public class SocketService {
     @Scheduled(fixedDelay = 1000 * 10)
     public void scheuledUpdate() throws JsonProcessingException {
 
-
         log.info("1분마다 App 서버로 정보 전송 " + globalVar.globalUpdateList);
 
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
         headers.setAccept(Collections.singletonList(MediaType.ALL));
         headers.setAcceptCharset(Arrays.asList(Charset.forName("UTF-8")));
 
-        MultiValueMap<String, List> map= new LinkedMultiValueMap<String, List>();
+        MultiValueMap<String, String> map= new LinkedMultiValueMap<>();
 
-        //List list = new ArrayList(globalVar.globalUpdateList.get)
+        String jsonStatueList = objectMapper.writeValueAsString(globalVar.globalUpdateList);
+        log.info("jsonStatueList: " + jsonStatueList);
 
-        map.add("statlist", globalVar.globalUpdateList);
+
+        map.add("statlist", jsonStatueList);
         log.info("statlist: " +map.toString());
 
-        HttpEntity<MultiValueMap<String, List>> request = new HttpEntity<MultiValueMap<String, List>>(map, headers);
-        ResponseEntity<RespData> response = rt.postForEntity(globalVar.dockingUrl, request , RespData.class );
-
+        HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<MultiValueMap<String, String>>(map, headers);
+        ResponseEntity<RespData> response = rt.postForEntity(globalVar.statusUpdateUrl, request , RespData.class );
         log.info("상시정보 업데이트 응답됨: " + response); //에러.........
-
     }
     
     
@@ -322,15 +320,15 @@ public class SocketService {
         log.info("rental Resp: " + result);
         CMRespDto cmRespDto = objectMapper.readValue(result, CMRespDto.class); //여기서는 어쩔 수 없이 null값 포함. 나중에 메시지컨버터로 리턴할떄 어차피 빠지니
         log.info("파싱된 대여응답 데이터: " + cmRespDto);
-        globalVar.globalDispatchData.put(cmRespDto.getData().getChargerId(), cmRespDto.getData());
+        globalVar.globalDispatchData.put(cmRespDto.getData().getChargerid(), cmRespDto.getData());
     }
 
     //도킹 성공이나 해제 여부를 충전기에게 알려줌.
     public void sendToChargerDocking(CMRespDto cmRespDto) throws IOException { //일단 읽는 거 신경안쓰고,
 
-        log.info("Docking chargeId: " + cmRespDto.getData().getChargerId());
+        log.info("Docking chargeId: " + cmRespDto.getData().getChargerid());
 
-        String chargeId = String.valueOf(cmRespDto.getData().getChargerId());
+        String chargeId = String.valueOf(cmRespDto.getData().getChargerid());
 
         SocketChannel schn = globalVar.globalSocket.get(chargeId); //여기서 인자로 stationId를
         String jsonData = objectMapper.writeValueAsString(cmRespDto);
@@ -366,11 +364,11 @@ public class SocketService {
 
         MultiValueMap<String, Integer> map= new LinkedMultiValueMap<String, Integer>();
 
-        map.add("stationid", cmRespDto.getData().getStationId());
-        map.add("chargerid", cmRespDto.getData().getChargerId());
+        map.add("stationid", cmRespDto.getData().getStationid());
+        map.add("chargerid", cmRespDto.getData().getChargerid());
         map.add("slotno", cmRespDto.getData().getSlotno());
         map.add("docked", cmRespDto.getData().getDocked());
-        map.add("mobilityid", cmRespDto.getData().getMobilityId());
+        map.add("mobilityid", cmRespDto.getData().getMobilityid());
 
         //log.info("docking map: " +map.toString());
 
@@ -382,14 +380,14 @@ public class SocketService {
 
         if(response.getBody().getResult_code() == 0 && cmRespDto.getData().getDocked() == 2){
 
-            response.getBody().setChargerId(cmRespDto.getData().getChargerId());
+            response.getBody().setChargerid(cmRespDto.getData().getChargerid());
             CMRespDto dockingRespDto = new CMRespDto(Opcode.DOCKING, response.getBody());
             System.out.println("도킹 해제, 충전기 mobilityId를 0으로 초기화: " + dockingRespDto);
             sendToChargerDocking(dockingRespDto);
 
         }else if(response.getBody().getResult_code() == 0 && cmRespDto.getData().getDocked() == 1){
 
-            response.getBody().setChargerId(cmRespDto.getData().getChargerId());
+            response.getBody().setChargerid(cmRespDto.getData().getChargerid());
             CMRespDto dockingRespDto = new CMRespDto(Opcode.DOCKING, response.getBody());
             System.out.println("도킹 성공: " + dockingRespDto);
             sendToChargerDocking(dockingRespDto);
