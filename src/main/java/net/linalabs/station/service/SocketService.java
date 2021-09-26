@@ -219,7 +219,7 @@ public class SocketService {
                     break;
 
                 case RETURN:
-
+                    returnRespProceed(result);
                     break;
 
 
@@ -258,7 +258,7 @@ public class SocketService {
     }
 
 
-    @Scheduled(fixedDelay = 1000 * 10)
+    @Scheduled(fixedDelay = 1000 * 60)
     public void scheuledUpdate() throws JsonProcessingException {
 
         log.info("1분마다 App 서버로 정보 전송 " + globalVar.globalUpdateList);
@@ -320,6 +320,14 @@ public class SocketService {
         log.info("rental Resp: " + result);
         CMRespDto cmRespDto = objectMapper.readValue(result, CMRespDto.class); //여기서는 어쩔 수 없이 null값 포함. 나중에 메시지컨버터로 리턴할떄 어차피 빠지니
         log.info("파싱된 대여응답 데이터: " + cmRespDto);
+        globalVar.globalDispatchData.put(cmRespDto.getData().getChargerid(), cmRespDto.getData());
+    }
+
+
+    public void returnRespProceed(String result) throws JsonProcessingException {
+        log.info("return Resp: " + result);
+        CMRespDto cmRespDto = objectMapper.readValue(result, CMRespDto.class);
+        log.info("파싱된 반납응답 데이터: " + cmRespDto);
         globalVar.globalDispatchData.put(cmRespDto.getData().getChargerid(), cmRespDto.getData());
     }
 

@@ -13,6 +13,8 @@ public class Common {
 
     //public static final Integer[] chargerIds = {1,2,3,4,5};
 
+    public static Integer updateMin = 1000 * 60;
+
     public static ByteBuffer str_to_bb(String msg) {
         Charset charset = Charset.forName("UTF-8");
         CharsetEncoder encoder = charset.newEncoder();

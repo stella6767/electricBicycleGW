@@ -2,13 +2,11 @@ package net.linalabs.station.handler;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import net.linalabs.station.handler.customexception.MValidException;
+import net.linalabs.station.handler.customexception.TimeOutException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @Slf4j
@@ -24,6 +22,12 @@ public class GlobalExceptionHandler {
         return e.getMessage();
     }
 
+    @ExceptionHandler(value= MValidException.class)
+    public String mValidException(MValidException e) {
+        log.info("timeOutError 뜸 " + e.getMessage());
+        return e.getMessage();
+    }
+
 
     @ExceptionHandler(value= Exception.class)
     public ResponseEntity<?> noLoginException(Exception e) {
@@ -33,11 +37,6 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(e.getMessage(), HttpStatus.LOCKED); //에러를 보낸다.
     }
 
-
-//    @ExceptionHandler(value = DuplicateException.class)
-//    public CMRespDto<?> illegalArgumentException(DuplicateException e){
-//        return new CMRespDto<>(-1,"같은 유저네임이 있습니다.", null);
-//    }
 
 
 }

@@ -34,5 +34,4 @@ public class GlobalVar {
 
     //public List<ConcurrentHashMap<Integer,RespData>> globalUpdateList = Collections.synchronizedList(new ArrayList<>());
 
-
 }

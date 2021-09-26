@@ -1,4 +1,4 @@
-package net.linalabs.station.handler;
+package net.linalabs.station.handler.customexception;
 
 public class TimeOutException extends RuntimeException{
 
