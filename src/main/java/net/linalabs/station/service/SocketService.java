@@ -44,13 +44,6 @@ import static net.linalabs.station.dto.Opcode.RENTAL;
 public class SocketService {
 
     private final GlobalVar globalVar;
-//    private RestTemplate rt = new RestTemplate();
-//    HttpHeaders headers = new HttpHeaders();
-//    ObjectMapper objectMapper = new ObjectMapper();
-//    private StringBuffer sb = new StringBuffer();
-//    JSONParser parser = new JSONParser();
-//    JSONObject obj;
-
     private final SocketReadService socketReadService;
 
 
