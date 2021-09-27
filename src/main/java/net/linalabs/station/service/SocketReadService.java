@@ -186,12 +186,10 @@ public class SocketReadService {
         CMRespDto cmRespDto = objectMapper.readValue(result, CMRespDto.class);
         log.info("파싱된 업데이트 데이터: " + cmRespDto);
 
-
         //중복제거를 위해
-        ConcurrentHashMap<Integer, RespData> updateData = new ConcurrentHashMap<>();
-        updateData.put(cmRespDto.getData().getChargerid(), cmRespDto.getData());
+        globalVar.updateData.put(cmRespDto.getData().getChargerid(), cmRespDto.getData());
         //RespData data = updateData.get(cmRespDto.getData().getChargerId());
-        List list = new ArrayList(updateData.values());
+        List list = new ArrayList(globalVar.updateData.values());
 
         log.info("중복제거된 list...: " + list);
 

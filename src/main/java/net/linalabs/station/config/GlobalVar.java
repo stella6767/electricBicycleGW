@@ -14,8 +14,8 @@ import java.util.concurrent.ConcurrentHashMap;
 @Configuration
 public class GlobalVar {
 
-    @Value("${ip}")
-    public String ip;
+//    @Value("${ip}")
+//    public String ip;
 
     @Value("${socketPort}")
     public Integer socketPort;
@@ -29,6 +29,8 @@ public class GlobalVar {
     public ConcurrentHashMap<String, SocketChannel> globalSocket = new ConcurrentHashMap<>();
 
     public ConcurrentHashMap<Integer, RespData> globalDispatchData = new ConcurrentHashMap<>();
+
+    public ConcurrentHashMap<Integer, RespData> updateData = new ConcurrentHashMap<>();
 
     public List<RespData> globalUpdateList = Collections.synchronizedList(new ArrayList<>());
 

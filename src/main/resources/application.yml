@@ -1,6 +1,5 @@
 
 server:
-  port: 8080
   servlet:
     context-path: /
     encoding:
@@ -8,12 +7,40 @@ server:
       enabled: true
 
 
+spring:
+  profiles:
+    active:
+      - dev
 
 
+---
 
-ip: localhost
+spring:
+  config:
+    activate:
+      on-profile:
+        - dev
+
+server:
+  port: 8080
+
+
 socketPort: 5053
 dockingUrl: https://pm.smartsuite.co.kr:4102/device/test/docking
 statusUpdateUrl: https://pm.smartsuite.co.kr:4102/device/test/statupdate
 
 #stationId: 1  임의로 지정
+
+---
+
+server:
+  port: 10080
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+
+socketPort: 5053
+dockingUrl: https://pm.smartsuite.co.kr:4102/device/docking
+statusUpdateUrl: https://pm.smartsuite.co.kr:4102/device/statupdate
