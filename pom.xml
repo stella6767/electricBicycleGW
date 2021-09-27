@@ -58,6 +58,7 @@
     </dependencies>
 
     <build>
+        <finalName>station</finalName>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
