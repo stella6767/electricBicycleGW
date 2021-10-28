@@ -9,7 +9,7 @@ import net.linalabs.station.dto.req.ReqData;
 import net.linalabs.station.dto.resp.RespData;
 import net.linalabs.station.handler.customexception.TimeOutException;
 import net.linalabs.station.service.ChargerSocketService;
-import net.linalabs.station.service.SocketReadService;
+
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;

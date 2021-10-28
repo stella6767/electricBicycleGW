@@ -13,7 +13,7 @@ public class Common {
 
     public static final Integer stationId = 1;
 
-    public static final Integer[] soketSelectlist = {0, 1, 2, 3, 4, 5, 6, 7, 8};
+    public static final Integer[] soketSelectlist = {0, 1, 2, 3, 4, 5, 6, 7, 8}; //chargerId
 
     public static final String clientSocketIp = "192.168.250.";
 

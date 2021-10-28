@@ -2,7 +2,6 @@ package net.linalabs.station.config;
 
 import lombok.RequiredArgsConstructor;
 import net.linalabs.station.service.ChargerSocketService;
-import net.linalabs.station.service.SocketService;
 import net.linalabs.station.utills.Common;
 import org.springframework.context.annotation.Configuration;
 
@@ -14,7 +13,7 @@ import java.util.concurrent.ExecutionException;
 @Configuration
 public class Emulator {
 
-    private final SocketService socketService;
+   // private final SocketService socketService;
     private final ChargerSocketService chargerSocketService;
 
     @PostConstruct

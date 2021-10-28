@@ -1,21 +1,37 @@
 package net.linalabs.station.service;
 
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.linalabs.station.config.GlobalVar;
+import net.linalabs.station.dto.Opcode;
 import net.linalabs.station.dto.req.CMReqDto;
 import net.linalabs.station.dto.resp.CMRespDto;
 import net.linalabs.station.dto.resp.RespData;
 import net.linalabs.station.utills.Common;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
+import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -24,8 +40,9 @@ public class ChargerSocketService {
 
 
     private final GlobalVar globalVar;
-    private final ChargerReadService chargerReadService;
     ObjectMapper objectMapper = new ObjectMapper();
+    private RestTemplate rt = new RestTemplate();
+
 
 
     @Async
@@ -96,7 +113,7 @@ public class ChargerSocketService {
                 if(bytesRead == 0 && result.length() > 0 ) {
 
                     log.info("totalResult: " + result);
-                    clasfy(result, schn);
+                    clasfy(result, socketSelectIp);
 
                     result="";
                     break;
@@ -122,23 +139,148 @@ public class ChargerSocketService {
     }
 
 
-    public void clasfy(String result, SocketChannel schn) throws IOException {
+    public void clasfy(String result, Integer chargerId ) throws IOException {
         //여기서 일괄적으로 RestTemplate으로 응답하는게 낫겠다.
         log.info("clasfy 분류: " + result);
 
         //byte[] chargerResponse = result.getBytes();	//문자열을 바이트 배열고 변경
 
         String chargerResponse = Common.byteArrayToHexaString(result.getBytes());
-        System.out.println(" byte array를 16진수 문자열로 변환 : "+ chargerResponse);
+        log.info(" byte array를 16진수 문자열로 변환 : "+ chargerResponse);
 
         String[] splitArray = chargerResponse.split("\\s");
 
         for (String resp: splitArray) {
-            System.out.println("resp: " + resp);
-
+            log.info("resp: " + resp);
         }
 
 
+        updateRespProceed(chargerId, splitArray);
+
+        if (splitArray[Common.TCP_PACKET-3].equals("00")){
+            log.info("Lock " + splitArray[Common.TCP_PACKET-3]);
+            dockingRespProceed(chargerId, 2);
+
+        }else{
+            log.info("unLock " + splitArray[Common.TCP_PACKET-3]);
+            dockingRespProceed(chargerId, 1);
+        }
+
+    }
+
+    public void updateRespProceed(Integer chargerId, String[] resultArray) throws IOException { //요거는 소켓에서 정보를 다 보내줘여..
+
+
+        rt.getMessageConverters()
+                .add(0, new StringHttpMessageConverter(Charset.forName("UTF-8")));
+
+        String battery = resultArray[3];
+        String mobilityId = resultArray[6];
+
+
+        log.info("지속적 전송을 위한 사전준비: " + battery + "  " + mobilityId);
+
+        RespData respData = RespData.builder()
+                .stationid(Common.stationId)
+                .chargerid(chargerId)
+                .slotno(1)
+                .mobilityid(Integer.valueOf(mobilityId))
+                .battery(Integer.valueOf(battery))
+                .build();
+
+        log.info("1분마다 받은 데이터를 등록: " + respData);
+
+        //중복제거를 위해
+        globalVar.updateData.put(chargerId, respData);
+        //RespData data = updateData.get(cmRespDto.getData().getChargerId());
+        List list = new ArrayList(globalVar.updateData.values());
+
+        log.info("중복제거된 list...: " + list);
+
+        globalVar.globalUpdateList = list;
+
+        //globalVar.globalUpdateList.add(updateData); //중복제거는 chargeId 기준으로 해야 되는데..
+        //globalVar.globalUpdateList.stream().map(d-> d.getChargerId() == data.getChargerId()).collect(Collectors.toList());
+
+    }
+
+
+
+
+
+    //도킹 또는 도킹해제 시
+    public void dockingRespProceed(Integer chargerId, Integer docked) throws IOException { //요거는 소켓에서 정보를 다 보내줘여..
+
+
+        HttpHeaders headers = new HttpHeaders();
+        rt.getMessageConverters()
+                .add(0, new StringHttpMessageConverter(Charset.forName("UTF-8")));
+
+
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+        headers.setAccept(Collections.singletonList(MediaType.ALL));
+        headers.setAcceptCharset(Arrays.asList(Charset.forName("UTF-8")));
+
+
+        MultiValueMap<String, Integer> map= new LinkedMultiValueMap<String, Integer>();
+
+        map.add("stationid", Common.stationId);
+        map.add("chargerid", chargerId);
+        map.add("slotno", 1);
+        map.add("docked", docked);
+        map.add("mobilityid", 1);
+
+        log.info("dockingRequest map: " +map.toString());
+
+        HttpEntity<MultiValueMap<String, Integer>> request = new HttpEntity<MultiValueMap<String, Integer>>(map, headers);
+        ResponseEntity<RespData> response = rt.postForEntity(globalVar.dockingUrl, request , RespData.class );
+
+        //String decodedResult = UriUtils.decode(response.getBody(),"UTF-8");
+        log.info("docking response: " + response.getBody());
+
+//        if(response.getBody().getResult_code() == 0 && cmRespDto.getData().getDocked() == 2){
+//
+//            response.getBody().setChargerid(cmRespDto.getData().getChargerid());
+//            CMRespDto dockingRespDto = new CMRespDto(Opcode.DOCKING, response.getBody());
+//            System.out.println("도킹 해제, 충전기 mobilityId를 0으로 초기화: " + dockingRespDto);
+//            sendToChargerDocking(dockingRespDto);
+//
+//        }else if(response.getBody().getResult_code() == 0 && cmRespDto.getData().getDocked() == 1){
+//
+//            response.getBody().setChargerid(cmRespDto.getData().getChargerid());
+//            CMRespDto dockingRespDto = new CMRespDto(Opcode.DOCKING, response.getBody());
+//            System.out.println("도킹 성공: " + dockingRespDto);
+//            sendToChargerDocking(dockingRespDto);
+//        }
+
+        //log.info("docking response2: " + decodedResult);
+
+    }
+
+
+
+    //@Scheduled(initialDelay = 1000*60, fixedDelay = 1000 * 60)
+    public void scheuledUpdate() throws JsonProcessingException {
+
+        HttpHeaders headers = new HttpHeaders();
+        log.info("1분마다 App 서버로 정보 전송 " + globalVar.globalUpdateList);
+
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+        headers.setAccept(Collections.singletonList(MediaType.ALL));
+        headers.setAcceptCharset(Arrays.asList(Charset.forName("UTF-8")));
+
+        MultiValueMap<String, String> map= new LinkedMultiValueMap<>();
+
+        String jsonStatueList = objectMapper.writeValueAsString(globalVar.globalUpdateList);
+        log.info("jsonStatueList: " + jsonStatueList);
+
+
+        map.add("statlist", jsonStatueList);
+        log.info("statlist: " +map.toString());
+
+        HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<MultiValueMap<String, String>>(map, headers);
+        ResponseEntity<RespData> response = rt.postForEntity(globalVar.statusUpdateUrl, request , RespData.class );
+        log.info("상시정보 업데이트 응답됨: " + response); //에러.........
     }
 
 
@@ -185,6 +327,14 @@ public class ChargerSocketService {
 
                 break;
 
+
+            case UPDATE:
+                log.info("update.. " + chargeId);
+
+                break;
+
+            default:
+                break;
         }
 
 
