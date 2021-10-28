@@ -40,17 +40,16 @@ public class ChargerSocketService {
 
 
     private final GlobalVar globalVar;
-    ObjectMapper objectMapper = new ObjectMapper();
-    private RestTemplate rt = new RestTemplate();
+
 
 
 
     @Async
-    public void clientSocketStart(Integer socketSelectIp) throws IOException{
+    public void clientSocketStart(Integer socketSelectIp) throws IOException {
         // HL7 Test Panel에 보낼 프로토콜
 
         boolean bLoop = true;
-        log.info("charger로 보내는 socket channel: " + Common.clientSocketIp +  String.valueOf(socketSelectIp + 20)  +" , " + Common.clientSocketPort);
+        log.info("charger로 보내는 socket channel: " + Common.clientSocketIp + String.valueOf(socketSelectIp + 20) + " , " + Common.clientSocketPort);
         SocketChannel socketChannel = null; //socketchannel을 안에 선언!
 
         while (bLoop) {
@@ -59,15 +58,18 @@ public class ChargerSocketService {
 
 
             try {
-                socketChannel.connect(new InetSocketAddress(Common.clientSocketIp +  String.valueOf(socketSelectIp + 20) , Common.clientSocketPort));
+                socketChannel.connect(new InetSocketAddress(Common.clientSocketIp + String.valueOf(socketSelectIp + 20), Common.clientSocketPort));
                 socketChannel.configureBlocking(false);// Non-Blocking I/O
 
-                log.info("socketChannel connected to port " + Common.clientSocketPort +   " And " + Common.clientSocketIp+String.valueOf(socketSelectIp + 20));
+                log.info("socketChannel connected to port " + Common.clientSocketPort + " And " + Common.clientSocketIp + String.valueOf(socketSelectIp + 20));
                 //clientReadService.readSocketData(socketChannel);
                 readSocketData(socketChannel, socketSelectIp);
 
             } catch (Exception e2) {
-                log.debug("clientSocket connected refused!!!");
+                log.info("clientSocket connected refused!!!");
+
+                log.info("Exception" + Common.getPrintStackTrace(e2));
+
                 //e2.printStackTrace();
             }
 
@@ -76,100 +78,110 @@ public class ChargerSocketService {
     }
 
 
-    public void readSocketData(SocketChannel schn, Integer socketSelectIp) throws IOException {
+    public void readSocketData(SocketChannel schn, Integer socketSelectIp) {
 
         //concurrentConfig.globalSocketMap.put("cs", schn);
-        globalVar.globalSocket.put(socketSelectIp.toString() , schn);
-        log.info("Client-socket 담김: "+ socketSelectIp.toString() + " " + schn);
+        globalVar.globalSocket.put(socketSelectIp.toString(), schn);
+        log.info("Client-socket 담김: " + socketSelectIp.toString() + " " + schn);
 
         boolean isRunning = true; // 일단 추가, socketWork 중지할지 안 중지할지
 
         while (isRunning && schn.isConnected()) {
 
             ByteBuffer readBuf = ByteBuffer.allocate(300); // 버퍼 메모리 공간확보
-            int bytesRead = schn.read(readBuf);
-
-            String result = "";
-
-            while (bytesRead != -1) {// 만약 소켓채널을 통해 buffer에 데이터를 받아왔으면
-
-                readBuf.flip(); // make buffer ready for read
-                // 10240로 정의한 buffer의 크기를 실제 데이터의 크기로 flip() 함
-
-                while (readBuf.hasRemaining()) {
-                    //log.info("!!!");
-                    // read 1 byte at a time
-                    //log.info("readBuf.hasRemaining1():  " + readBuf.hasRemaining() );
-                    result = result + String.valueOf(((char) readBuf.get()));
-                    //log.info("result1: " + result);
-                }
-                //log.info("가"+result);
-                readBuf.clear(); //make buffer ready for writing
-                //readBuf.compact();
+            int bytesRead = 0;
+            try {
                 bytesRead = schn.read(readBuf);
-                //log.info("byteRead size: " + bytesRead);
-                //log.info("resultLength: " + result.length());
 
-                if(bytesRead == 0 && result.length() > 0 ) {
+                String result = "";
 
-                    log.info("totalResult: " + result);
-                    clasfy(result, socketSelectIp);
+                while (bytesRead != -1) {// 만약 소켓채널을 통해 buffer에 데이터를 받아왔으면
 
-                    result="";
-                    break;
+                    readBuf.flip(); // make buffer ready for read
+                    // 10240로 정의한 buffer의 크기를 실제 데이터의 크기로 flip() 함
 
-                }else if(bytesRead == 0){
-                    try {
-                        Thread.sleep(100);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                        return;
+                    while (readBuf.hasRemaining()) {
+                        //log.info("!!!");
+                        // read 1 byte at a time
+                        //log.info("readBuf.hasRemaining1():  " + readBuf.hasRemaining() );
+                        result = result + String.valueOf(((char) readBuf.get()));
+                        //log.info("result1: " + result);
                     }
+                    //log.info("가"+result);
+                    readBuf.clear(); //make buffer ready for writing
+                    //readBuf.compact();
+                    bytesRead = schn.read(readBuf);
+                    //log.info("byteRead size: " + bytesRead);
+                    //log.info("resultLength: " + result.length());
+
+                    if (bytesRead == 0 && result.length() > 0) {
+
+                        log.info("totalResult: " + result);
+                        clasfy(result, socketSelectIp);
+
+                        result = "";
+                        break;
+
+                    } else if (bytesRead == 0) {
+                        try {
+                            Thread.sleep(100);
+                        } catch (Exception e) {
+                            log.info("Exception" + Common.getPrintStackTrace(e));
+
+
+                            return;
+                        }
+                    }
+
                 }
 
+            } catch (Exception e) {
+                log.info("Exception" + Common.getPrintStackTrace(e));
+                log.info("소켓 닫기");
+                try {
+                    schn.close(); // 소켓 닫기
+                } catch (Exception ex) {
+                    log.info("Exception" + Common.getPrintStackTrace(ex));
+                }
             }
-
-
 
         }// 연결돼있다면 무한루프
 
-
-        log.info("소켓 닫기");
-        schn.close(); // 소켓 닫기
     }
 
 
-    public void clasfy(String result, Integer chargerId ) throws IOException {
+    public void clasfy(String result, Integer chargerId) throws IOException {
         //여기서 일괄적으로 RestTemplate으로 응답하는게 낫겠다.
         log.info("clasfy 분류: " + result);
 
         //byte[] chargerResponse = result.getBytes();	//문자열을 바이트 배열고 변경
 
         String chargerResponse = Common.byteArrayToHexaString(result.getBytes());
-        log.info(" byte array를 16진수 문자열로 변환 : "+ chargerResponse);
+        log.info(" byte array를 16진수 문자열로 변환 : " + chargerResponse);
 
         String[] splitArray = chargerResponse.split("\\s");
 
-        for (String resp: splitArray) {
+        for (String resp : splitArray) {
             log.info("resp: " + resp);
         }
 
 
         updateRespProceed(chargerId, splitArray);
 
-        if (splitArray[Common.TCP_PACKET-3].equals("00")){
-            log.info("Lock " + splitArray[Common.TCP_PACKET-3]);
+        if (splitArray[Common.TCP_PACKET - 3].equals("00")) {
+            log.info("Lock " + splitArray[Common.TCP_PACKET - 3]);
             dockingRespProceed(chargerId, 2);
 
-        }else{
-            log.info("unLock " + splitArray[Common.TCP_PACKET-3]);
+        } else {
+            log.info("unLock " + splitArray[Common.TCP_PACKET - 3]);
             dockingRespProceed(chargerId, 1);
         }
 
     }
 
     public void updateRespProceed(Integer chargerId, String[] resultArray) throws IOException { //요거는 소켓에서 정보를 다 보내줘여..
-
+        ObjectMapper objectMapper = new ObjectMapper();
+        RestTemplate rt = new RestTemplate();
 
         rt.getMessageConverters()
                 .add(0, new StringHttpMessageConverter(Charset.forName("UTF-8")));
@@ -184,8 +196,8 @@ public class ChargerSocketService {
                 .stationid(Common.stationId)
                 .chargerid(chargerId)
                 .slotno(1)
-                .mobilityid(Integer.valueOf(mobilityId))
-                .battery(Integer.valueOf(battery))
+                .mobilityid(Integer.valueOf(mobilityId, 16))
+                .battery(Integer.valueOf(battery,16))
                 .build();
 
         log.info("1분마다 받은 데이터를 등록: " + respData);
@@ -205,12 +217,9 @@ public class ChargerSocketService {
     }
 
 
-
-
-
     //도킹 또는 도킹해제 시
     public void dockingRespProceed(Integer chargerId, Integer docked) throws IOException { //요거는 소켓에서 정보를 다 보내줘여..
-
+        RestTemplate rt = new RestTemplate();
 
         HttpHeaders headers = new HttpHeaders();
         rt.getMessageConverters()
@@ -222,7 +231,7 @@ public class ChargerSocketService {
         headers.setAcceptCharset(Arrays.asList(Charset.forName("UTF-8")));
 
 
-        MultiValueMap<String, Integer> map= new LinkedMultiValueMap<String, Integer>();
+        MultiValueMap<String, Integer> map = new LinkedMultiValueMap<String, Integer>();
 
         map.add("stationid", Common.stationId);
         map.add("chargerid", chargerId);
@@ -230,38 +239,21 @@ public class ChargerSocketService {
         map.add("docked", docked);
         map.add("mobilityid", 1);
 
-        log.info("dockingRequest map: " +map.toString());
+        log.info("dockingRequest map: " + map.toString());
 
         HttpEntity<MultiValueMap<String, Integer>> request = new HttpEntity<MultiValueMap<String, Integer>>(map, headers);
-        ResponseEntity<RespData> response = rt.postForEntity(globalVar.dockingUrl, request , RespData.class );
+        ResponseEntity<RespData> response = rt.postForEntity(globalVar.dockingUrl, request, RespData.class);
 
         //String decodedResult = UriUtils.decode(response.getBody(),"UTF-8");
         log.info("docking response: " + response.getBody());
 
-//        if(response.getBody().getResult_code() == 0 && cmRespDto.getData().getDocked() == 2){
-//
-//            response.getBody().setChargerid(cmRespDto.getData().getChargerid());
-//            CMRespDto dockingRespDto = new CMRespDto(Opcode.DOCKING, response.getBody());
-//            System.out.println("도킹 해제, 충전기 mobilityId를 0으로 초기화: " + dockingRespDto);
-//            sendToChargerDocking(dockingRespDto);
-//
-//        }else if(response.getBody().getResult_code() == 0 && cmRespDto.getData().getDocked() == 1){
-//
-//            response.getBody().setChargerid(cmRespDto.getData().getChargerid());
-//            CMRespDto dockingRespDto = new CMRespDto(Opcode.DOCKING, response.getBody());
-//            System.out.println("도킹 성공: " + dockingRespDto);
-//            sendToChargerDocking(dockingRespDto);
-//        }
-
-        //log.info("docking response2: " + decodedResult);
-
     }
-
 
 
     //@Scheduled(initialDelay = 1000*60, fixedDelay = 1000 * 60)
     public void scheuledUpdate() throws JsonProcessingException {
-
+        ObjectMapper objectMapper = new ObjectMapper();
+        RestTemplate rt = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
         log.info("1분마다 App 서버로 정보 전송 " + globalVar.globalUpdateList);
 
@@ -269,17 +261,17 @@ public class ChargerSocketService {
         headers.setAccept(Collections.singletonList(MediaType.ALL));
         headers.setAcceptCharset(Arrays.asList(Charset.forName("UTF-8")));
 
-        MultiValueMap<String, String> map= new LinkedMultiValueMap<>();
+        MultiValueMap<String, String> map = new LinkedMultiValueMap<>();
 
         String jsonStatueList = objectMapper.writeValueAsString(globalVar.globalUpdateList);
         log.info("jsonStatueList: " + jsonStatueList);
 
 
         map.add("statlist", jsonStatueList);
-        log.info("statlist: " +map.toString());
+        log.info("statlist: " + map.toString());
 
         HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<MultiValueMap<String, String>>(map, headers);
-        ResponseEntity<RespData> response = rt.postForEntity(globalVar.statusUpdateUrl, request , RespData.class );
+        ResponseEntity<RespData> response = rt.postForEntity(globalVar.statusUpdateUrl, request, RespData.class);
         log.info("상시정보 업데이트 응답됨: " + response); //에러.........
     }
 
@@ -295,11 +287,11 @@ public class ChargerSocketService {
         SocketChannel schn = globalVar.globalSocket.get(chargeId); //여기서 인자로 stationId를
 
 
-        byte[] SendBuf = {0x1B,00, 0x10, 00, 00,00,00,00,00,0xD};
+        byte[] SendBuf = {0x1B, 00, 0x10, 00, 00, 00, 00, 00, 00, 0xD};
         SendBuf[Common.TCP_PACKET - 1] = 0xD;
 
         //10~19    0~8 + 20
-        SendBuf[1] = (byte)(cmReqDto.getData().getChargerid()+20);
+        SendBuf[1] = (byte) (cmReqDto.getData().getChargerid() + 20);
 
         switch (cmReqDto.getOpcode()) {
             case RENTAL:
@@ -311,7 +303,7 @@ public class ChargerSocketService {
                         .stationid(Common.stationId)
                         .chargerid(Integer.valueOf(chargeId))
                         .build();
-            //연동되는 기기에서는 stationID, chartgerId, mobilityId가 랜덤하게 생성돼서, 사실상 의미가 없다...
+                //연동되는 기기에서는 stationID, chartgerId, mobilityId가 랜덤하게 생성돼서, 사실상 의미가 없다...
                 globalVar.globalDispatchData.put(Integer.valueOf(chargeId), rentalData);
                 break;
 

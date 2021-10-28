@@ -2,6 +2,8 @@ package net.linalabs.station.utills;
 
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
@@ -46,5 +48,13 @@ public class Common {
         return builder.toString();
     }
 
+    public static String getPrintStackTrace(Exception e) {
+
+        StringWriter errors = new StringWriter();
+        e.printStackTrace(new PrintWriter(errors));
+
+        return errors.toString();
+
+    }
 
 }
