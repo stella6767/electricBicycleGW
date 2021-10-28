@@ -1,16 +1,13 @@
 package net.linalabs.station.config;
 
 import lombok.RequiredArgsConstructor;
-import net.linalabs.station.service.ClientSocketService;
+import net.linalabs.station.service.ChargerSocketService;
 import net.linalabs.station.service.SocketService;
 import net.linalabs.station.utills.Common;
 import org.springframework.context.annotation.Configuration;
 
 import javax.annotation.PostConstruct;
 import java.io.IOException;
-import java.nio.channels.SocketChannel;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 
 @RequiredArgsConstructor
@@ -18,18 +15,18 @@ import java.util.concurrent.ExecutionException;
 public class Emulator {
 
     private final SocketService socketService;
-    private final ClientSocketService clientSocketService;
+    private final ChargerSocketService chargerSocketService;
 
     @PostConstruct
     public void socketStart() throws IOException, ExecutionException, InterruptedException {
 
-            socketService.serverSocketStart();
+            //socketService.serverSocketStart();
 
         for (Integer item :Common.soketSelectlist) {
-            clientSocketService.clientSocketStart(item);
+            chargerSocketService.clientSocketStart(item);
         }
 
-        //clientSocketService.clientSocketStart(1);
+ //       clientSocketService.clientSocketStart(1);
 
 
     }

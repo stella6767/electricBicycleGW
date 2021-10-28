@@ -8,9 +8,10 @@ import net.linalabs.station.dto.req.CMReqDto;
 import net.linalabs.station.dto.req.ReqData;
 import net.linalabs.station.dto.resp.RespData;
 import net.linalabs.station.handler.customexception.TimeOutException;
+import net.linalabs.station.service.ChargerSocketService;
 import net.linalabs.station.service.SocketReadService;
-import net.linalabs.station.service.SocketService;
 import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -23,13 +24,13 @@ import java.util.concurrent.ExecutionException;
 @RestController
 public class ElectricBicycleController {
 
-    //private final SocketService socketService;
 
-    private final SocketReadService socketReadService;
+    private final ChargerSocketService chargerSocketService;
     private final GlobalVar globalVar;
 
     private final int maxTimeout = 3000;
     private final int sleepTime = 10;
+
 
     @PostMapping("/rental")
     public RespData rentalRequest(@Valid ReqData rentalReq, BindingResult bindingResult
@@ -38,7 +39,7 @@ public class ElectricBicycleController {
         log.info("전기자전거 대여요청 옴: " + rentalReq);
 
         CMReqDto cmReqDto = new CMReqDto(Opcode.RENTAL, rentalReq);//Opcode.RENTAL.getCode()
-        socketReadService.sendToCharger(cmReqDto);
+        chargerSocketService.sendToCharger(cmReqDto);
 
         RespData respData = null;
 
@@ -47,7 +48,6 @@ public class ElectricBicycleController {
         //timeOut을 설정
         while (respData == null){
             respData = globalVar.globalDispatchData.get(rentalReq.getChargerid());
-
 
             Thread.sleep(sleepTime);
             i++;
@@ -72,7 +72,8 @@ public class ElectricBicycleController {
         log.info("전기자전거 반납요청 옴: " + returnReq);
 
         CMReqDto cmReqDto = new CMReqDto(Opcode.RETURN, returnReq);//Opcode.RENTAL.getCode()
-        socketReadService.sendToCharger(cmReqDto);
+        chargerSocketService.sendToCharger(cmReqDto);
+
 
         RespData respData = null;
 
@@ -94,7 +95,6 @@ public class ElectricBicycleController {
         globalVar.globalDispatchData.clear();
 
         return respData;
-
     }
 
 

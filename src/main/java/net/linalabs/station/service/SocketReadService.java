@@ -201,7 +201,7 @@ public class SocketReadService {
     }
 
 
-    @Scheduled(fixedDelay = 1000 * 60)
+    //@Scheduled(fixedDelay = 1000 * 60)
     public void scheuledUpdate() throws JsonProcessingException {
 
         log.info("1분마다 App 서버로 정보 전송 " + globalVar.globalUpdateList);
