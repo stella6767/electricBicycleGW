@@ -17,6 +17,7 @@ public class GlobalVar {
 //    @Value("${ip}")
 //    public String ip;
 
+
     @Value("${socketPort}")
     public Integer socketPort;
 

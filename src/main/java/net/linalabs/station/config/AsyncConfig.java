@@ -18,7 +18,7 @@ public class AsyncConfig implements SchedulingConfigurer {
     @Override
     public void configureTasks(ScheduledTaskRegistrar taskRegistrar) {
         ThreadPoolTaskScheduler threadPoolTaskScheduler = new ThreadPoolTaskScheduler();
-        threadPoolTaskScheduler.setPoolSize(10);
+        threadPoolTaskScheduler.setPoolSize(100);
         threadPoolTaskScheduler.setThreadNamePrefix("kangSchedled-");
         threadPoolTaskScheduler.initialize();
         taskRegistrar.setTaskScheduler(threadPoolTaskScheduler);
@@ -28,7 +28,8 @@ public class AsyncConfig implements SchedulingConfigurer {
     @Bean
     public TaskExecutor taskExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(10);
+        executor.setCorePoolSize(100);
+        executor.setMaxPoolSize(500);
         executor.setThreadNamePrefix("kang-async-");
         executor.initialize();
 

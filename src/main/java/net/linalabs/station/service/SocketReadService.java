@@ -80,7 +80,7 @@ public class SocketReadService {
                         byteCount = schn.read(readBuf); // 소켓채널에서 한번에 초과되는 버퍼사이즈의 데이터가 들어오면..
 
                         log.info("[gwEmulThread #100] TID[" + "] byteCount :  " + byteCount);
-                        // logger.debug("isRunning why: " + isRunning);
+                        // log.info("isRunning why: " + isRunning);
                     } catch (Exception e) {
                         // e.printStackTrace();
                         log.info("갑자기 클라이언트 소켓이 닫혔을 시");

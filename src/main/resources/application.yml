@@ -9,11 +9,11 @@ server:
 
 spring:
   profiles:
-    active:
-      - dev
+    active: dev
 
 
 ---
+
 
 spring:
   config:
@@ -33,13 +33,14 @@ statusUpdateUrl: https://pm.smartsuite.co.kr:4102/device/test/statupdate
 
 ---
 
-server:
-  port: 10080
+
 spring:
   config:
     activate:
       on-profile: prod
 
+server:
+  port: 10080
 
 socketPort: 5053
 dockingUrl: https://pm.smartsuite.co.kr:4102/device/docking
