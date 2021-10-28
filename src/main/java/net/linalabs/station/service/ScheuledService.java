@@ -38,7 +38,7 @@ public class ScheuledService {
 
 
 
-    @Scheduled(initialDelay = 1000, fixedDelay = 1000)
+    @Scheduled(initialDelay = 10000, fixedDelay = 10000)
     public void chargerStatusPolling() throws IOException {  //지속적으로 상태값들을 charger들로부터 알아온다.
 
         for (Integer item :Common.soketSelectlist) {
@@ -55,7 +55,7 @@ public class ScheuledService {
 
 
 
-    @Scheduled(initialDelay = 10000, fixedDelay = 10000)
+    @Scheduled(initialDelay = 1000 * 60, fixedDelay = 1000 * 60)
     public void scheuledUpdate() throws JsonProcessingException {
         RestTemplate rt = new RestTemplate();
         ObjectMapper objectMapper = new ObjectMapper();
