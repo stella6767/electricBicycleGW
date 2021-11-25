@@ -37,11 +37,10 @@ public class ScheuledService {
     private final ChargerSocketService chargerSocketService;
 
 
-
     @Scheduled(initialDelay = 10000, fixedDelay = 10000)
     public void chargerStatusPolling() throws IOException {  //지속적으로 상태값들을 charger들로부터 알아온다.
 
-        for (Integer item :Common.soketSelectlist) {
+        for (Integer item : Common.soketSelectlist) {
 
             ReqData data = ReqData.builder()
                     .chargerid(item)
@@ -52,7 +51,6 @@ public class ScheuledService {
 
         }
     }
-
 
 
     @Scheduled(initialDelay = 1000 * 60, fixedDelay = 1000 * 60)
@@ -66,21 +64,19 @@ public class ScheuledService {
         headers.setAccept(Collections.singletonList(MediaType.ALL));
         headers.setAcceptCharset(Arrays.asList(Charset.forName("UTF-8")));
 
-        MultiValueMap<String, String> map= new LinkedMultiValueMap<>();
+        MultiValueMap<String, String> map = new LinkedMultiValueMap<>();
 
         String jsonStatueList = objectMapper.writeValueAsString(globalVar.globalUpdateList);
         log.info("jsonStatueList: " + jsonStatueList);
 
 
         map.add("statlist", jsonStatueList);
-        log.info("statlist: " +map.toString());
+        log.info("statlist: " + map.toString());
 
         HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<MultiValueMap<String, String>>(map, headers);
-        ResponseEntity<RespData> response = rt.postForEntity(globalVar.statusUpdateUrl, request , RespData.class );
+        ResponseEntity<RespData> response = rt.postForEntity(globalVar.statusUpdateUrl, request, RespData.class);
         log.info("상시정보 업데이트 응답됨: " + response); //에러.........
     }
-
-
 
 
 }

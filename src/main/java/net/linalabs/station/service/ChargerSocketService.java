@@ -42,8 +42,6 @@ public class ChargerSocketService {
     private final GlobalVar globalVar;
 
 
-
-
     @Async
     public void clientSocketStart(Integer socketSelectIp) throws IOException {
         // HL7 Test Panel에 보낼 프로토콜
@@ -196,8 +194,8 @@ public class ChargerSocketService {
                 .stationid(Common.stationId)
                 .chargerid(chargerId)
                 .slotno(1)
-                .mobilityid(Integer.valueOf(mobilityId, 16))
-                .battery(Integer.valueOf(battery,16))
+                .mobilityid(chargerId)//Integer.valueOf(mobilityId, 16)
+                .battery(Integer.valueOf(battery, 16))
                 .build();
 
         log.info("1분마다 받은 데이터를 등록: " + respData);
@@ -237,7 +235,7 @@ public class ChargerSocketService {
         map.add("chargerid", chargerId);
         map.add("slotno", 1);
         map.add("docked", docked);
-        map.add("mobilityid", 1);
+        map.add("mobilityid", chargerId);
 
         log.info("dockingRequest map: " + map.toString());
 
@@ -295,7 +293,7 @@ public class ChargerSocketService {
 
         switch (cmReqDto.getOpcode()) {
             case RENTAL:
-                //SendBuf[2] = 0x12; //언락이 의미가없음. 기기에서 눌러야 됨
+                SendBuf[2] = 0x12; //언락이 의미가없음. 기기에서 눌러야 됨
 
                 RespData rentalData = RespData.builder()
                         .result_code(0)
@@ -308,7 +306,7 @@ public class ChargerSocketService {
                 break;
 
             case RETURN:
-                //SendBuf[2] = 0x11; //락이 의미가없음. 기기에서 눌러야 됨
+                SendBuf[2] = 0x11; //락이 의미가없음. 기기에서 눌러야 됨
                 RespData returnData = RespData.builder()
                         .result_code(0)
                         .result_message("반납 요청되었습니다.")

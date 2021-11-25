@@ -46,13 +46,13 @@ public class ElectricBicycleController {
         int i = 1;
 
         //timeOut을 설정
-        while (respData == null){
+        while (respData == null) {
             respData = globalVar.globalDispatchData.get(rentalReq.getChargerid());
 
             Thread.sleep(sleepTime);
             i++;
 
-            if(maxTimeout < i*sleepTime){
+            if (maxTimeout < i * sleepTime) {
                 throw new TimeOutException("timeout 에러");
             }
         }
@@ -63,7 +63,6 @@ public class ElectricBicycleController {
 
         return respData;
     }
-
 
 
     @PostMapping("/return")
@@ -80,12 +79,12 @@ public class ElectricBicycleController {
         int i = 1;
 
         //timeOut을 설정
-        while (respData == null){
+        while (respData == null) {
             respData = globalVar.globalDispatchData.get(returnReq.getChargerid());
             Thread.sleep(sleepTime);
             i++;
 
-            if(maxTimeout < i*sleepTime){
+            if (maxTimeout < i * sleepTime) {
                 throw new TimeOutException("timeout 에러");
             }
         }

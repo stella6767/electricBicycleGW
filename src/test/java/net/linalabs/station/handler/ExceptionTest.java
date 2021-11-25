@@ -1,7 +1,6 @@
 package net.linalabs.station.handler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import net.linalabs.station.service.SocketService;
 import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;

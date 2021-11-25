@@ -13,19 +13,19 @@ import java.util.concurrent.ExecutionException;
 @Configuration
 public class Emulator {
 
-   // private final SocketService socketService;
+    // private final SocketService socketService;
     private final ChargerSocketService chargerSocketService;
 
     @PostConstruct
     public void socketStart() throws IOException, ExecutionException, InterruptedException {
 
-            //socketService.serverSocketStart();
+        //socketService.serverSocketStart();
 
-        for (Integer item :Common.soketSelectlist) {
+        for (Integer item : Common.soketSelectlist) {
             chargerSocketService.clientSocketStart(item);
         }
 
- //       clientSocketService.clientSocketStart(1);
+        //       clientSocketService.clientSocketStart(1);
 
 
     }
