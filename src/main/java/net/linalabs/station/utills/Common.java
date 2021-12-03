@@ -13,12 +13,19 @@ import java.nio.charset.CharsetEncoder;
 @Slf4j
 public class Common {
 
-    public static final Integer stationId = 1;
+    //public static final Integer stationId = 2;
 
     //public static final Integer[] soketSelectlist = {5, 6, 7, 8}; //chargerId
 
     //public static final Integer[] soketSelectlist = {0, 1, 2, 3, 4}; //chargerId
-    public static final Integer[] soketSelectlist = {1}; //chargerId
+
+
+//    public static final Integer stationId = 2;
+//    public static final Integer[] soketSelectlist = {0, 4}; //chargerId
+
+    public static final Integer stationId = 1;
+    //public static final Integer[] soketSelectlist = {1, 6}; //chargerId
+    public static final Integer[] soketSelectlist = {8}; //chargerId
 
 
     public static final String clientSocketIp = "192.168.250.";

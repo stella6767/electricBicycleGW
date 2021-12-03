@@ -11,6 +11,7 @@ import net.linalabs.station.dto.req.CMReqDto;
 import net.linalabs.station.dto.resp.CMRespDto;
 import net.linalabs.station.dto.resp.RespData;
 import net.linalabs.station.utills.Common;
+import org.springframework.core.env.Environment;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -163,17 +164,22 @@ public class ChargerSocketService {
             log.info("resp: " + resp);
         }
 
+        if(splitArray.length > 3){ //socket이 끊기지 않게끔
+            updateRespProceed(chargerId, splitArray);
 
-        updateRespProceed(chargerId, splitArray);
+            if (splitArray[Common.TCP_PACKET - 3].equals("00")) {
+                log.info("Lock " + splitArray[Common.TCP_PACKET - 3]);
+                dockingRespProceed(chargerId, 2);
 
-        if (splitArray[Common.TCP_PACKET - 3].equals("00")) {
-            log.info("Lock " + splitArray[Common.TCP_PACKET - 3]);
-            dockingRespProceed(chargerId, 2);
-
-        } else {
-            log.info("unLock " + splitArray[Common.TCP_PACKET - 3]);
-            dockingRespProceed(chargerId, 1);
+            } else {
+                log.info("unLock " + splitArray[Common.TCP_PACKET - 3]);
+                dockingRespProceed(chargerId, 1);
+            }
         }
+
+
+
+
 
     }
 
@@ -337,5 +343,45 @@ public class ChargerSocketService {
         }
 
     }
+
+
+//    private void Set_ACtuator(int slave_sel, String act_state) {
+//
+//        byte[] SendBuf = new byte[Common.TCP_PACKET];
+//        byte[] RecBuf = new byte[Common.TCP_PACKET];
+//
+//
+//        int byte_cnt;
+//        if (SlvSocket[slave_sel].Connected == false) return;
+//        // timer1.Stop();
+//        //   Thread.Sleep(100);
+//        Array.Clear(SendBuf, 0, SendBuf.Length);
+//
+//        SendBuf[0] = 0x1B;
+//        SendBuf[1] = (byte) (slave_sel + 20);
+//        SendBuf[TCP_PACKET - 1] = 0xD;
+//
+//        if (act_state == "LOCK") {
+//
+//            SendBuf[2] = TCP_CMD_LOCK_BIKE;
+//            txtStatus.Text += "LOCK accepted" + Environment.NewLine;
+//
+//        } else if (act_state == "UNLOCK") {
+//            txtStatus.Text += "UNLOCK accepted" + Environment.NewLine;
+//            SendBuf[2] = TCP_CMD_UNLOCK_BIKE;
+//        }
+//
+//        byte_cnt = SlvSocket[slave_sel].Send(SendBuf, 0);
+//
+//        while (true) {
+//            Thread.Sleep(1);
+//            byte_cnt = SlvSocket[slave_sel].Receive(RecBuf, 0);
+//            if (RecBuf[0] == 0xD) break;
+//
+//
+//        }
+//
+//    }
+
 
 }
